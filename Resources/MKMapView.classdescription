@@ -1,7 +1,0 @@
-{
-    "ClassName"  : "MKMapView",
-    "SuperClass" : "CPView",
-    "Actions"    : {
-                     "takeStringAddressFrom:" : "id"
-                   }
-}
