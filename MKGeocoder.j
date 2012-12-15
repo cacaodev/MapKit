@@ -1,18 +1,36 @@
 @import "MKPlacemark.j"
+@import "MKMapView.j"
 
 @implementation MKGeocoder : CPObject
 {
-    BOOL geocoding @accessors(readonly);
-    id _geocoder;
+    Object   _geocoder;
+    BOOL     geocoding @accessors(readonly);
 }
 
 - (id)init
 {
     self = [super init];
+
+    _geocoder = nil;    
     geocoding = NO;
-    _geocoder = new google.maps.Geocoder();
     
+    [self loadGoogleAPI];
+
     return self;
+}
+
+- (id)loadGoogleAPI
+{
+    var loader = [MKMapView GoogleAPIScriptLoader],
+        completionFunction = function(){[self _buildGeocoder];};
+
+    [loader addCompletionFunction:completionFunction];
+    [loader load];
+}
+
+- (void)_buildGeocoder
+{
+    _geocoder = new google.maps.Geocoder();
 }
 
 - (void)geocodeAddressString:(CPString)anAddress inRegion:(id/*MKCoordinateRegion*/)region completionHandler:(Function /*(placemarks, error)*/)completionHandler
@@ -24,13 +42,30 @@
         request['bounds'] = bounds;
     }
     
-    [self _geocodeWithRequest:request completionHandler:completionHandler];
+    [self geocodeWithRequest:request completionHandler:completionHandler];
 }
 
 - (void)reverseGeocodeLocation:(id/*CLLocationCoordinate2D*/)location completionHandler:(Function /*(placemarks, error)*/)completionHandler
 {
     var latLng = LatLngFromCLLocationCoordinate2D(location);
-    [self _geocodeWithRequest:{latLng:latLng} completionHandler:completionHandler];
+    [self geocodeWithRequest:{latLng:latLng} completionHandler:completionHandler];
+}
+
+- (void)geocodeWithRequest:(Object)properties completionHandler:(Function /*(placemarks, error)*/)completionHandler
+{
+    if (_geocoder)
+        [self _geocodeWithRequest:properties completionHandler:completionHandler];
+    else
+    {
+        var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
+        [invocation setTarget:self];
+        [invocation setSelector:@selector(_geocodeWithRequest:completionHandler:)];
+        [invocation setArgument:properties atIndex:2];
+        [invocation setArgument:completionHandler atIndex:3];
+        
+        var loader = [MKMapView GoogleAPIScriptLoader];
+        [loader invoqueWhenLoaded:invocation ignoreMultiple:NO];
+    }
 }
 
 - (void)_geocodeWithRequest:(Object)properties completionHandler:(Function /*(placemarks, error)*/)completionHandler

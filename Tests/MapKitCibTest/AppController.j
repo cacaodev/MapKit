@@ -11,25 +11,31 @@
 
 @implementation AppController : CPObject
 {
-    CPWindow    theWindow; //this "outlet" is connected automatically by the Cib
+    @outlet CPWindow  theWindow; //this "outlet" is connected automatically by the Cib
     @outlet MKMapView mapView;
 }
 
 - (void)applicationDidFinishLaunching:(CPNotification)aNotification
 {
-    // This is called when the application is done loading.
-}
+console.log(_cmd);
 
-- (void)awakeFromCib
-{
-    [mapView setZoomLevel:20];
-    [mapView setDelegate:self];
-}
-
-- (void)mapViewDidFinishLoadingMap:(MKMapView)aMapView
-{
+    var loc = CLLocationCoordinate2D(0,0);
+    var annotation = [[MKAnnotation alloc] init];
+    [annotation setCoordinate:loc];
+    [mapView setCenterCoordinate:loc];
+    [mapView addAnnotation:annotation];
+    
+    var mapView2 = [[MKMapView alloc] initWithFrame:CGRectMake(450, 20, 300, 300)];
+    
+    var loc = CLLocationCoordinate2D(0,0);
+    var annotation = [[MKAnnotation alloc] init];
+    [annotation setCoordinate:loc];
+    [mapView2 setCenterCoordinate:loc];
+    [mapView2 addAnnotation:annotation];
+    [[theWindow contentView] addSubview:mapView2];
+    
+return;
     var address = @"12 rue de vaugirard, paris, france";
-
     var geocoder = [[MKGeocoder alloc] init];
     [geocoder geocodeAddressString:address inRegion:nil completionHandler:function(placemarks, error)
     {
@@ -45,6 +51,16 @@
             [mapView addAnnotation:annotation];
         }
     }];
+}
+
+- (void)awakeFromCib
+{
+    [mapView setZoomLevel:20];
+}
+
+- (void)mapViewDidFinishLoadingMap:(MKMapView)aMapView
+{
+    console.log(_cmd);
 }
 
 @end

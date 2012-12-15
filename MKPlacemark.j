@@ -3,23 +3,22 @@
 
 @implementation MKPlacemark : CPObject
 {
-   CPDictionary adressDictionary @accessors(readonly);
-   CLLocationCoordinate2D coordinate @accessors(readonly);
-   CPString thoroughfare @accessors(readonly);
-   CPString subThoroughfare @accessors(readonly);
-   CPString locality @accessors(readonly);
-   CPString subLocality @accessors(readonly);
-   CPString administrativeArea @accessors(readonly);
-   CPString subAdministrativeArea @accessors(readonly);
-   CPString postalCode @accessors(readonly);
-   CPString country @accessors(readonly);
-   CPString countryCode @accessors(readonly);
+   CPDictionary adressDictionary        @accessors(readonly);
+   CPString     thoroughfare            @accessors(readonly);
+   CPString     subThoroughfare         @accessors(readonly);
+   CPString     locality                @accessors(readonly);
+   CPString     subLocality             @accessors(readonly);
+   CPString     administrativeArea      @accessors(readonly);
+   CPString     subAdministrativeArea   @accessors(readonly);
+   CPString     postalCode              @accessors(readonly);
+   CPString     country                 @accessors(readonly);
+   CPString     countryCode             @accessors(readonly);
+   CPString     formattedAddress        @accessors(readonly);
 
-   CPString formattedAddress @accessors(readonly);
-   
+   CLLocationCoordinate2D coordinate    @accessors(readonly);   
 }
 
--(id)initWithJSON:(JSObject)aJson
+- (id)initWithJSON:(JSObject)aJson
 {
 	var addDic  = [[CPMutableDictionary alloc] init];
        	
@@ -40,7 +39,6 @@
        		};
       };	
       
-      
     var aCoordinate = nil;
 
     if(aJson && aJson && aJson.geometry)
@@ -52,7 +50,6 @@
     if(self = [self initWithCoordinate:aCoordinate addressDictionary:addDic])
     {
 	    [self setValue:aJson.formatted_address forKey:@"formattedAddress"];
-	    
     }    
     
     return self;
