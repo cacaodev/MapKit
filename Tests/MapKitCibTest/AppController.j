@@ -24,17 +24,16 @@ console.log(_cmd);
     [annotation setCoordinate:loc];
     [mapView setCenterCoordinate:loc];
     [mapView addAnnotation:annotation];
-    
+
     var mapView2 = [[MKMapView alloc] initWithFrame:CGRectMake(450, 20, 300, 300)];
-    
+
     var loc = CLLocationCoordinate2D(0,0);
     var annotation = [[MKAnnotation alloc] init];
     [annotation setCoordinate:loc];
     [mapView2 setCenterCoordinate:loc];
     [mapView2 addAnnotation:annotation];
     [[theWindow contentView] addSubview:mapView2];
-    
-return;
+
     var address = @"12 rue de vaugirard, paris, france";
     var geocoder = [[MKGeocoder alloc] init];
     [geocoder geocodeAddressString:address inRegion:nil completionHandler:function(placemarks, error)
@@ -46,7 +45,7 @@ return;
             var location = [placemarks[0] coordinate];
             var annotation = [[MKAnnotation alloc] init];
             [annotation setCoordinate:location];
-            
+
             [mapView setCenterCoordinate:location];
             [mapView addAnnotation:annotation];
         }

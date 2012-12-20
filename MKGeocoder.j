@@ -3,17 +3,22 @@
 
 @implementation MKGeocoder : CPObject
 {
-    Object   _geocoder;
-    BOOL     geocoding @accessors(readonly);
+    Object          _geocoder;
+    CPInvocation    _geocodeInvocation;
+    BOOL            geocoding @accessors(readonly);
 }
 
 - (id)init
 {
     self = [super init];
 
-    _geocoder = nil;    
+    _geocoder = nil;
     geocoding = NO;
-    
+
+    _geocodeInvocation = [[CPInvocation alloc] initWithMethodSignature:nil];
+    [_geocodeInvocation setTarget:self];
+    [_geocodeInvocation setSelector:@selector(_geocodeWithRequest:completionHandler:)];
+
     [self loadGoogleAPI];
 
     return self;
@@ -21,10 +26,13 @@
 
 - (id)loadGoogleAPI
 {
-    var loader = [MKMapView GoogleAPIScriptLoader],
-        completionFunction = function(){[self _buildGeocoder];};
+    var loader = [MKMapView GoogleAPIScriptLoader];
 
-    [loader addCompletionFunction:completionFunction];
+    [loader addCompletionFunction:function()
+    {
+        [self _buildGeocoder];
+    }];
+
     [loader load];
 }
 
@@ -41,7 +49,7 @@
         var bounds = LatLngBoundsFromMKCoordinateRegion(region);
         request['bounds'] = bounds;
     }
-    
+
     [self geocodeWithRequest:request completionHandler:completionHandler];
 }
 
@@ -57,21 +65,17 @@
         [self _geocodeWithRequest:properties completionHandler:completionHandler];
     else
     {
-        var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
-        [invocation setTarget:self];
-        [invocation setSelector:@selector(_geocodeWithRequest:completionHandler:)];
-        [invocation setArgument:properties atIndex:2];
-        [invocation setArgument:completionHandler atIndex:3];
-        
-        var loader = [MKMapView GoogleAPIScriptLoader];
-        [loader invoqueWhenLoaded:invocation ignoreMultiple:NO];
+        [_geocodeInvocation setArgument:properties atIndex:2];
+        [_geocodeInvocation setArgument:completionHandler atIndex:3];
+
+        [[MKMapView GoogleAPIScriptLoader] invoqueWhenLoaded:_geocodeInvocation ignoreMultiple:NO];
     }
 }
 
 - (void)_geocodeWithRequest:(Object)properties completionHandler:(Function /*(placemarks, error)*/)completionHandler
 {
-    geocoding = YES;		
-    _geocoder.geocode(properties, function(results, status) 
+    geocoding = YES;
+    _geocoder.geocode(properties, function(results, status)
     {
         var placemarks,
             error;
@@ -86,12 +90,12 @@
                 [placemarks addObject:placemark];
             }];
         }
-        else 
+        else
         {
             error = status;
             placemarks = nil;
         }
-        
+
         completionHandler(placemarks, error);
         geocoding = NO;
     });

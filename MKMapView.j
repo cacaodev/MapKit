@@ -84,7 +84,7 @@ var _GoogleAPIScriptLoader = nil,
 {
     if (!_GoogleAPIScriptLoader)
         _GoogleAPIScriptLoader = [ScriptLoader scriptWithURL:GOOGLE_API_URL callbackParameter:GOOGLE_API_CALLBACK];
-        
+
     return _GoogleAPIScriptLoader;
 }
 
@@ -98,14 +98,14 @@ var _GoogleAPIScriptLoader = nil,
     self = [super initWithFrame:aFrame];
 
     if (self)
-    {           
+    {
         m_centerCoordinate = aCoordinate || new CLLocationCoordinate2D(52, -1);
         m_zoomLevel = 6;
         m_mapType = MKMapTypeStandard;
         m_scrollWheelZoomEnabled = YES;
 
         [self _init];
-        
+
         [self loadGoogleAPI];
     }
 
@@ -125,13 +125,16 @@ var _GoogleAPIScriptLoader = nil,
 - (id)loadGoogleAPI
 {
     var loader = [[self class] GoogleAPIScriptLoader];
-    
+
     if ([[loader operation] isFinished])
         [self _buildMap];
     else
-    {        
-        var completionFunction = function(){[self _buildMap];};
-        [loader addCompletionFunction:completionFunction];
+    {
+        [loader addCompletionFunction:function()
+        {
+            [self _buildMap];
+        }];
+
         [loader load];
     }
 }
@@ -144,18 +147,18 @@ var _GoogleAPIScriptLoader = nil,
         mapTypeId:MAP_TYPES[m_mapType],
         scrollwheel:m_scrollWheelZoomEnabled
     }
-    
+
     var contentView = [[CPView alloc] initWithFrame:[self bounds]];
     [contentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [self addSubview:contentView];
-    
+
     m_DOMMapElement = contentView._DOMElement;
     m_map = new google.maps.Map(m_DOMMapElement, options);
     [m_options setMapObject:m_map];
 
     [self _sendDidFinishLoadingNotificationIfNeeded];
     [self layoutSubviews];
-    
+
     var event = google.maps.event;
     event.addListener(m_map, "zoom_changed", function()
     {
@@ -178,7 +181,7 @@ var _GoogleAPIScriptLoader = nil,
         [self willChangeValueForKey:"mapType"];
         m_mapType = MAP_TYPES.indexOf(m_map.getMapTypeId());
         [self didChangeValueForKey:"mapType"];
-    });    
+    });
 }
 
 - (void)awakeFromCib
@@ -306,7 +309,7 @@ var _GoogleAPIScriptLoader = nil,
         [invocation setTarget:self];
         [invocation setSelector:@selector(_addAnnotations:)];
         [invocation setArgument:anAnnotationArray atIndex:2];
-        
+
         var loader = [MKMapView GoogleAPIScriptLoader];
         [loader invoqueWhenLoaded:invocation ignoreMultiple:NO];
     }
@@ -401,7 +404,7 @@ var MKMapViewCenterCoordinateKey    = @"MKMapViewCenterCoordinateKey",
 }
 
 - (void)encodeWithCoder:(CPCoder)aCoder
-{    
+{
     [super encodeWithCoder:aCoder];
 
     [aCoder encodeObject:CPStringFromCLLocationCoordinate2D([self centerCoordinate]) forKey:MKMapViewCenterCoordinateKey];
@@ -443,7 +446,7 @@ var MKMapViewCenterCoordinateKey    = @"MKMapViewCenterCoordinateKey",
         js_options[key] = value;
         [options setObject:value forKey:key]; // Will send KVO notifications for each value
     }];
-    
+
     if (mapObject != null)
         mapObject.setOptions(js_options);
 }
