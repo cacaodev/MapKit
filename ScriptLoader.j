@@ -1,4 +1,9 @@
 
+@import <Foundation/CPOperation.j>
+@import <Foundation/CPOperationQueue.j>
+@import <Foundation/CPInvocationOperation.j>
+@import <Foundation/CPInvocation.j>
+
 var CALLBACK_PARAMETERS = [],
     _CachedScriptLoader = {};
 
@@ -106,7 +111,7 @@ var CALLBACK_PARAMETERS = [],
         [_pendingInvocations addObject:anInvocation];
     }
 }
-
+/*
 - (void)addOperation:(CPOperation)op withName:(CPString)aName dependentOn:(CPString)dep oneShot:(BOOL)oneShot
 {
     if (dep)
@@ -134,7 +139,7 @@ var CALLBACK_PARAMETERS = [],
     else
         [self addOperation:op];
 }
-
+*/
 - (void)addOperation:(CPOperation)anOperation
 {
     [anOperation addDependency:_operation];
@@ -196,6 +201,7 @@ var CALLBACK_PARAMETERS = [],
 
     var ScriptLoaded = function ()
     {
+        CPLog.debug("ScriptLoaded");
         [self willChangeValueForKey:@"isExecuting"];
         m_executing = NO;
         [self didChangeValueForKey:@"isExecuting"];
@@ -211,7 +217,8 @@ var CALLBACK_PARAMETERS = [],
 
         [m_completionFunctions enumerateObjectsUsingBlock:function(aFunction, idx)
         {
-            aFunction();
+            if (aFunction)
+                aFunction();
         }];
 
         [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];

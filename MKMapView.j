@@ -31,6 +31,8 @@
 @import "MKTypes.j"
 @import "ScriptLoader.j"
 
+@global google;
+
 var _GoogleAPIScriptLoader = nil,
     GOOGLE_API_URL = "http://maps.google.com/maps/api/js?sensor=false&callback=_GoogleMapsLoaded",
     GOOGLE_API_CALLBACK = "_GoogleMapsLoaded",
@@ -203,7 +205,7 @@ var _GoogleAPIScriptLoader = nil,
 {
     return m_map;
 }
-
+/*
 - (MKCoordinateRegion)region
 {
     if (m_map)
@@ -219,7 +221,7 @@ var _GoogleAPIScriptLoader = nil,
     if (m_map)
         m_map.fitBounds(LatLngBoundsFromMKCoordinateRegion(aRegion));
 }
-
+*/
 - (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
     m_centerCoordinate = aCoordinate;
