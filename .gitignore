@@ -1,1 +1,3 @@
-Tests/*/Frameworks/
+Frameworks/
+*.xcodeproj
+*.XcodeSupport

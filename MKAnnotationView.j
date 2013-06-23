@@ -1,47 +1,187 @@
+
+@import <AppKit/CPView.j>
+
+@global google;
+
 @implementation MKAnnotationView : CPView
 {
-	BOOL enabled @accessors(getter=isEnabled);	
-	BOOL highlighted @accessors(getter=isHighlighted);
-	CPImage image @accessors();
-	CPView leftCalloutAccessoryView @accessors();
-	CPString reuseIdentifier @accessors(readonly);
-	CPView rightCalloutAccessoryView @accessors();
-	BOOL selected @accessors(getter=isSelected);
-	MKAnnotation annotation @accessors();
-	CPPoint calloutOffset @accessors();
-	BOOL canShowCallout @accessors();
-	CPPoint centerOffset @accessors();
-	BOOL draggable @accessors(getter=isDraggable);
-	
+	BOOL        enabled         @accessors(getter=isEnabled);
+	BOOL        highlighted     @accessors(getter=isHighlighted);
+	BOOL        selected        @accessors(getter=isSelected);
+	BOOL        canShowCallout  @accessors;
+	BOOL        draggable       @accessors(getter=isDraggable);
+
+	CPImage     _image                    @accessors(property=image);
+	CPView      leftCalloutAccessoryView  @accessors;
+	CPView      rightCalloutAccessoryView @accessors;
+	CPString    reuseIdentifier           @accessors(readonly);
+	CPPoint     calloutOffset             @accessors;
+	CPPoint     centerOffset              @accessors;
+
+	id          annotation                @accessors;
+	Object      _marker;
+	Object      _overlay;
+	Object      _infowindow;
 	//TODO : Dragstate
 }
-
-- (id)initWithAnnotation:(MKAnnotation)aAnnotation reuseIdentifer:(CPString)aIdentfier
+ 
++ (void)initialize
 {
-	if(self = [super init])
+    GMOverlay.prototype = new google.maps.OverlayView();
+
+    GMOverlay.prototype.onAdd = function()
+    {
+        console.log("onAdd" + this.toString());
+        // We add an overlay to a map via one of the map's panes.
+        // We'll add this overlay to the overlayImage pane.
+        var panes = this.getPanes();
+        panes.overlayMouseTarget.appendChild(this.domElement);
+    };
+
+    GMOverlay.prototype.draw = function()
+    {
+        console.log("draw" + this.toString());
+        // Size and position the overlay. We use a southwest and northeast
+        // position of the overlay to peg it to the correct position and size.
+        // We need to retrieve the projection from this overlay to do this.
+        var overlayProjection = this.getProjection();
+
+        // Retrieve the southwest and northeast coordinates of this overlay
+        // in latlngs and convert them to pixels coordinates.
+        // We'll use these coordinates to resize the DIV.
+        var latLng = LatLngFromCLLocationCoordinate2D(this.coordinate);
+        var pos = overlayProjection.fromLatLngToDivPixel(latLng);
+
+        // Resize the image's DIV to fit the indicated dimensions.
+        var offset = this.offset;
+        var domElement = this.domElement;
+        domElement.style.left = (pos.x + offset.x) + 'px';
+        domElement.style.top = (pos.y + offset.y) + 'px';
+    };
+}
+
+- (id)initWithAnnotation:(MKAnnotation)aAnnotation reuseIdentifier:(CPString)anIdentfier
+{
+    self = [super initWithFrame:CGRectMake(0, 0, 64, 78)];
+
+	if (self)
 	{
-		self.annotation = aAnnotation;
+        annotation = aAnnotation;
+		reuseIdentifier = anIdentfier;
+		centerOffset = CGPointMake(0,0);
+		calloutOffset = CGPointMake(0,0);
+		draggable = NO;
+		canShowCallout = NO;
+		leftCalloutAccessoryView = nil;
+		rightCalloutAccessoryView = nil;
+		enabled = YES;
+		_image = nil;
+		_marker = nil;
+		_overlay = nil;
+		_infowindow = nil;
 	}
-	
+
 	return self;
+}
+
+- (void)_updateMarkerAndOverlayForMap:(id)aMap
+{
+    if (!_marker)
+    {
+        _marker = new google.maps.Marker({
+            position: LatLngFromCLLocationCoordinate2D([annotation coordinate]),
+            //draggable:draggable,
+            clickable:enabled,
+            anchorPoint:calloutOffset,
+            title:[annotation title],
+            animation:google.maps.Animation.DROP
+        });
+        
+        if (_image)
+        {
+            var size = [_image size];
+            var icon = {
+                url:[_image filename],
+                anchor:{x:size.width/2, y:size.height},
+                size:{width:size.width, height:size.height}
+            };
+            
+            _marker.setIcon(icon);
+            //_marker.setShape({type:'rect', coord:[0,0,size.width,size.height]});
+        }
+        else
+        {
+            _overlay = new GMOverlay(self._DOMElement, [annotation coordinate], centerOffset);
+            _marker.setVisible(false);
+            [self setNeedsDisplay:YES];
+        }
+
+        var event = google.maps.event;
+
+        if (draggable)
+        {
+            event.addListener(_marker, "dragend", function(mouseEvent)
+            {
+                var latLng = mouseEvent.latLng;
+                [annotation setCoordinate:CLLocationCoordinate2DFromLatLng(latLng)];
+                console.log("drag end" + [annotation coordinate]);
+            });
+        }
+        
+        if (enabled)
+        {
+            var title = [annotation title],
+                subtitle = [annotation subtitle],
+                titleHTML = title ? '<div style="font-weight:bold; font-size:12px">'+title+'</div>' : '',
+                subtitleHTML = subtitle ? '<div style="color:gray; font-size:10px">'+subtitle+'</div>' : '';
+            
+            _infowindow = new google.maps.InfoWindow({
+                content: '<div style="">'+titleHTML+subtitleHTML+'</div>'
+            });
+            
+            event.addListener(_marker, 'click', function()
+            {
+                [self setSelected:YES animated:YES];
+            });
+        }
+    }
+    
+    _marker.setMap(aMap);
+    
+    if (_overlay)
+        _overlay.setMap(aMap);
 }
 
 - (void)prepareForReuse
 {
-	
+
 }
 
-- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+- (void)setSelected:(BOOL)shouldSelect animated:(BOOL)animated
 {
-	
+    if (shouldSelect)
+        _infowindow.open(_marker.getMap(), _marker);
+    else
+        _infowindow.close();
+        
+    selected = shouldSelect;
 }
 
 /*
 - (void)setDragState:(MKAnnotationViewDragState)newDragState animated:(BOOL)animated
 {
-	
+
 }*/
 
-
-
 @end
+
+var GMOverlay = function (domElement, coordinate, offset)
+{
+  // We define a property to hold the image's
+  // div. We'll actually create this div
+  // upon receipt of the add() method so we'll
+  // leave it null for now.
+  this.domElement = domElement;
+  this.coordinate = coordinate;
+  this.offset = offset;
+};
