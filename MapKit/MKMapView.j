@@ -58,7 +58,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 @implementation MKMapView : CPView
 {
-    @outlet                 id _delegate @accessors(getter=delegate);
+    @outlet                 id delegate @accessors(getter=delegate);
 
     MKMapType               _mapType;
     MKCoordinateRegion      _region;
@@ -200,7 +200,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
         [self didChangeValueForKey:"region"];
 
         if (_MKMapViewDelegateMethods & delegate_mapView_regionDidChangeAnimated)
-            [_delegate mapView:self regionDidChangeAnimated:NO];
+            [delegate mapView:self regionDidChangeAnimated:NO];
 
         CPLog.debug("bounds_changed");
     });
@@ -215,7 +215,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     event.addListener(_map, "tilesloaded", function()
     {
         if (_MKMapViewDelegateMethods & delegate_mapViewDidFinishRenderingMap_fullyRendered)
-            [_delegate mapViewDidFinishRenderingMap:self fullyRendered:YES];
+            [delegate mapViewDidFinishRenderingMap:self fullyRendered:YES];
     });
 
     event.addListener(_map, "projection_changed", function()
@@ -238,7 +238,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
     if (_MKMapViewDelegateMethods & delegate_mapViewDidFinishLoadingMap)
     {
-        [_delegate mapViewDidFinishLoadingMap:self];
+        [delegate mapViewDidFinishLoadingMap:self];
         delegateDidSendFinishLoading = YES;
     }
 }
@@ -281,7 +281,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     if ([aDelegate respondsToSelector:@selector(mapViewDidFinishRenderingMap:fullyRendered:)])
         _MKMapViewDelegateMethods |= delegate_mapViewDidFinishRenderingMap_fullyRendered;
 
-    _delegate = aDelegate;
+    delegate = aDelegate;
 }
 
 - (Object)namespace
@@ -432,6 +432,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 		    annotationView = [self _dequeueViewForAnnotation:annotation];
 
         [annotationView _updateMarkerAndOverlayForMap:_map];
+
 		[_annotations addObject:annotation];
 		_viewForAnnotationMap[[annotation UID]] = annotationView;
 
@@ -454,9 +455,9 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     if (view)
         return view;
 
-    if (_delegate && (_MKMapViewDelegateMethods & delegate_mapView_viewForAnnotation))
+    if (delegate && (_MKMapViewDelegateMethods & delegate_mapView_viewForAnnotation))
     {
-        return [_delegate mapView:self viewForAnnotation:annotation];
+        return [delegate mapView:self viewForAnnotation:annotation];
     }
 
     return [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:nil];
@@ -469,7 +470,21 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 - (void)removeAnnotations:(CPArray)aAnnotationArray
 {
-    [_annotations removeObjectsInArray:aAnnotationArray];
+    var count = [aAnnotationArray count];
+
+    while (count--)
+    {
+        var annotation = [aAnnotationArray objectAtIndex:count];
+
+        var view = [self viewForAnnotation:annotation];
+        if (view)
+        {
+            [view _removeMarker];
+            delete _viewForAnnotationMap[[annotation UID]];
+        }
+
+        [_annotations removeObjectIdenticalTo:annotation];
+    }
 }
 
 /*

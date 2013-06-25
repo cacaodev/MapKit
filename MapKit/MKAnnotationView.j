@@ -21,10 +21,10 @@
 	id          annotation                @accessors;
 	Object      _marker;
 	Object      _overlay;
-	Object      _infowindow;
+	Object      _infoWindow;
 	//TODO : Dragstate
 }
- 
+
 + (void)initialize
 {
     GMOverlay.prototype = new google.maps.OverlayView();
@@ -78,7 +78,7 @@
 		_image = nil;
 		_marker = nil;
 		_overlay = nil;
-		_infowindow = nil;
+		_infoWindow = nil;
 	}
 
 	return self;
@@ -96,7 +96,7 @@
             title:[annotation title],
             animation:google.maps.Animation.DROP
         });
-        
+
         if (_image)
         {
             var size = [_image size];
@@ -105,7 +105,7 @@
                 anchor:{x:size.width/2, y:size.height},
                 size:{width:size.width, height:size.height}
             };
-            
+
             _marker.setIcon(icon);
             //_marker.setShape({type:'rect', coord:[0,0,size.width,size.height]});
         }
@@ -127,29 +127,45 @@
                 console.log("drag end" + [annotation coordinate]);
             });
         }
-        
+
         if (enabled)
         {
-            var title = [annotation title],
-                subtitle = [annotation subtitle],
-                titleHTML = title ? '<div style="font-weight:bold; font-size:12px">'+title+'</div>' : '',
-                subtitleHTML = subtitle ? '<div style="color:gray; font-size:10px">'+subtitle+'</div>' : '';
-            
-            _infowindow = new google.maps.InfoWindow({
-                content: '<div style="">'+titleHTML+subtitleHTML+'</div>'
-            });
-            
             event.addListener(_marker, 'click', function()
             {
                 [self setSelected:YES animated:YES];
             });
         }
     }
-    
+
     _marker.setMap(aMap);
-    
+
     if (_overlay)
         _overlay.setMap(aMap);
+}
+
+- (Object)_infoWindow
+{
+    if (!_infoWindow)
+    {
+        var title = [annotation title],
+            subtitle = [annotation subtitle],
+            titleHTML = title ? '<div style = "font-weight:bold; font-size:12px">' + title + '</div>' : '',
+            subtitleHTML = subtitle ? '<div style = "color:gray; font-size:12px">' + subtitle + '</div>' : '';
+
+        _infoWindow = new google.maps.InfoWindow({
+            content: '<div style="">' + titleHTML + subtitleHTML + '</div>'
+        });
+    }
+
+    return _infoWindow;
+}
+
+- (void)_removeMarker
+{
+    _marker.setMap(null);
+    _marker = nil;
+    _overlay = nil;
+    _infoWindow = nil;
 }
 
 - (void)prepareForReuse
@@ -159,11 +175,13 @@
 
 - (void)setSelected:(BOOL)shouldSelect animated:(BOOL)animated
 {
+    var infoWindow = [self _infoWindow];
+
     if (shouldSelect)
-        _infowindow.open(_marker.getMap(), _marker);
+        infoWindow.open(_marker.getMap(), _marker);
     else
-        _infowindow.close();
-        
+        infoWindow.close();
+
     selected = shouldSelect;
 }
 
