@@ -5,11 +5,11 @@
  * Created by You on March 1, 2012.
  * Copyright 2012, Your Company All rights reserved.
  */
- 
+
 CPLogRegister(CPLogConsole);
 
 @import <Foundation/CPObject.j>
-@import "../../MapKit.j"
+@import "MapKit/MapKit.j"
 
 @implementation AppController : CPObject
 {
@@ -36,15 +36,17 @@ CPLogRegister(CPLogConsole);
 
 - (IBAction)addPlacemark:(id)sender
 {
-
     var annotation = [[MKPointAnnotation alloc] init];
     [annotation setTitle:@"Title"];
     [annotation setSubtitle:@"subtitle"];
     [annotation setCoordinate:[mapView centerCoordinate]];
     [mapView addAnnotation:annotation];
-    
+
     //var visible = [mapView annotationsInMapRect:[mapView visibleMapRect]];
-    
+}
+
+- (IBAction)showAnnotations:(id)sender
+{
     [mapView showAnnotations:[mapView annotations] animated:NO];
 
 /*
@@ -60,7 +62,7 @@ CPLogRegister(CPLogConsole);
 
 - (void)awakeFromCib
 {
-    [mapView setZoomLevel:20];
+    //[mapView setZoomLevel:20];
     console.log(_cmd + [theWindow firstResponder]);
 }
 

@@ -172,11 +172,17 @@ function MKMapPointMake(/* double*/ x, /*double*/ y)
 
 function MKCoordinateForMapPoint(/*MKMapPoint*/ mapPoint)
 {
+    if (typeof GOOGLE_MAPS_PROJECTION == 'undefined')
+        return CLLocationCoordinate2DMake(0, 0);
+
     return CLLocationCoordinate2DFromLatLng(GOOGLE_MAPS_PROJECTION.fromPointToLatLng(mapPoint));
 }
 
 function MKMapPointForCoordinate(/*CLLocationCoordinate2D*/ coordinate)
 {
+    if (typeof GOOGLE_MAPS_PROJECTION == 'undefined')
+        return MKMapPointMake(0, 0);
+
     return GOOGLE_MAPS_PROJECTION.fromLatLngToPoint(LatLngFromCLLocationCoordinate2D(coordinate));
 }
 
@@ -267,26 +273,26 @@ function MKMapRectContainsPoint(aMapRect, aMapPoint)
 function MKMapRectForCoordinateRegion(region)
 {
     var a = MKMapPointForCoordinate(CLLocationCoordinate2DMake(
-        region.center.latitude + region.span.latitudeDelta / 2, 
+        region.center.latitude + region.span.latitudeDelta / 2,
         region.center.longitude - region.span.longitudeDelta / 2));
-        
+
     var b = MKMapPointForCoordinate(CLLocationCoordinate2DMake(
-        region.center.latitude - region.span.latitudeDelta / 2, 
+        region.center.latitude - region.span.latitudeDelta / 2,
         region.center.longitude + region.span.longitudeDelta / 2));
-        
+
     return MKMapRectMake(MIN(a.x, b.x), MIN(a.y, b.y), ABS(a.x - b.x), ABS(a.y - b.y));
 }
 
 function MKCoordinateRegionForMapRect(mapRect)
 {
     var center = MKMapPointMake(MKMapRectGetMidX(mapRect), MKMapRectGetMidY(mapRect));
-    
+
     var centerCoordinate = MKCoordinateForMapPoint(center);
     var originCoordinate = MKCoordinateForMapPoint(mapRect.origin);
-    
+
     var span = MKCoordinateSpanMake(ABS(originCoordinate.latitude - centerCoordinate.latitude) *2 , ABS(centerCoordinate.longitude - originCoordinate.longitude) * 2);
-    
-    return MKCoordinateRegionMake(centerCoordinate, span);    
+
+    return MKCoordinateRegionMake(centerCoordinate, span);
 }
 
 MKMapRect.prototype.toString = function()
