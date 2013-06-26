@@ -57,6 +57,12 @@ CPLogRegister(CPLogConsole);
     [mapView showAnnotations:anns animated:NO];
 }
 
+- (IBAction)setMapType:(id)sender
+{
+    var type = [sender tagForSegment:[sender selectedSegment]];
+    [mapView setMapType:type];
+}
+
 - (id)init
 {
     self = [super init];
@@ -92,9 +98,11 @@ CPLogRegister(CPLogConsole);
             }
             else
             {
-                var placemark = [placemarks firstObject];
-                country = [placemark country];
-                locality = [placemark locality];
+                var placemark = [placemarks firstObject],
+                    addressDictionary = [placemark addressDictionary];
+
+                country = [addressDictionary objectForKey:@"country"];
+                locality = [addressDictionary objectForKey:@"locality"];
             }
 
             [annotation setTitle:country];
@@ -116,6 +124,50 @@ CPLogRegister(CPLogConsole);
     [mapView setSelectedAnnotations:selection];
 }
 
+- (void)findDirectionsFrom:(MKMapItem)source to:(MKMapItem)destination
+{
+    var request = [[MKDirectionsRequest alloc] init];
+    [request setSource:source];
+    [request setDestination:destination];
+
+    CPLog.debug("request " + request);
+
+    var directions = [[MKDirections alloc] initWithRequest:request];
+
+    CPLog.debug("directions " + directions);
+
+    [directions calculateDirectionsWithCompletionHandler:function(response, error)
+    {
+       if (error == nil)
+       {
+           CPLog.debug("response " + [response description]);
+       }
+    }];
+}
+
+- (IBAction)directions:(id)sender
+{
+    var indexes = [tableView selectedRowIndexes],
+        selection = [annotations objectsAtIndexes:indexes];
+
+    if ([selection count] < 2)
+        return;
+
+    var p = [[MKPlacemark alloc] init];
+    [p setLocation:[selection[0] coordinate]];
+
+    var pp = [[MKPlacemark alloc] init];
+    [pp setLocation:[selection[1] coordinate]];
+
+    [mapView addAnnotations:[p, pp]];
+
+    var start = [[MKMapItem alloc] initWithPlacemark:p],
+        end = [[MKMapItem alloc] initWithPlacemark:pp];
+
+    [self findDirectionsFrom:start to:end];
+}
+
+// Accessors
 - (void)insertObject:(id)anObject inAnnotationsAtIndex:(CPInteger)anIndex
 {
     [annotations insertObject:anObject atIndex:anIndex];
@@ -138,13 +190,15 @@ CPLogRegister(CPLogConsole);
 
 - (void)awakeFromCib
 {
-    //[mapView setZoomLevel:20];
-    console.log(_cmd + [theWindow firstResponder]);
+    console.log(_cmd);
 }
 
+// Delegate methods
 - (void)mapViewDidFinishLoadingMap:(MKMapView)aMapView
 {
     console.log(_cmd + aMapView);
+    var mapRect = MKMapRectMake(129.66556735568577, 88.06258736755004, 0.0135498046875, 0.011108398437528);
+    [aMapView setVisibleMapRect:mapRect];
 }
 
 - (void)mapViewDidFinishRenderingMap:(MKMapView)aMapView fullyRendered:(BOOL)flag

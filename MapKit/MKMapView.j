@@ -33,6 +33,7 @@
 @import "quadtree.js"
 
 @class MKAnnotation;
+@class MKOverlay;
 @class MKPinAnnotationView;
 
 @global google;
@@ -64,7 +65,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     MKCoordinateRegion      _region;
     BOOL                    _scrollEnabled;
     BOOL                    _showsZoomControls;
-    BOOL                    delegateDidSendFinishLoading;
+    BOOL                    _delegateDidSendFinishLoading;
 
     // Tracking
     //BOOL                    _previousTrackingLocation;
@@ -75,7 +76,8 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     CPArray                 _annotations @accessors(getter=annotations);
     CPArray                 _selectedAnnotations @accessors(getter=selectedAnnotations);
     CPDictionary            _reusableAnnotationViews;
-    CPDictionary            markerDictionary;
+    CPArray                 _overlays;
+
     MapOptions              _options @accessors(property=options);
     Object                  _quadTree;
     unsigned int            _MKMapViewDelegateMethods;
@@ -141,8 +143,8 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     _selectedAnnotations = [];
     _viewForAnnotationMap = {};
     _reusableAnnotationViews = @{};
-    markerDictionary = @{};
-    delegateDidSendFinishLoading = NO;
+    _overlays = [];
+    _delegateDidSendFinishLoading = NO;
     _options = [[MapOptions alloc] init];
     _quadTree = nil;
     _MKMapViewDelegateMethods = 0;
@@ -233,13 +235,13 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 - (void)_sendDidFinishLoadingNotificationIfNeeded
 {
-    if (!_map || delegateDidSendFinishLoading)
+    if (!_map || _delegateDidSendFinishLoading)
         return;
 
     if (_MKMapViewDelegateMethods & delegate_mapViewDidFinishLoadingMap)
     {
         [delegate mapViewDidFinishLoadingMap:self];
-        delegateDidSendFinishLoading = YES;
+        _delegateDidSendFinishLoading = YES;
     }
 }
 
@@ -394,6 +396,16 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 - (void)setSelectedAnnotation:(id <MKAnnotation>)annotation animated:(BOOL)animated
 {
     [self setSelectedAnnotations:[CPArray arrayWithObject:annotation]];
+}
+
+- (void)deselectAnnotation:(id <MKAnnotation>)annotation animated:(BOOL)animated
+{
+    var view = [self viewForAnnotation:annotation];
+
+    if (view)
+        [view setSelected:NO animated:NO];
+
+    [_selectedAnnotations removeObject:annotation];
 }
 
 /*
@@ -604,7 +616,56 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 - (MKAnnotationView)dequeueReusableAnnotationViewWithIdentifier:(CPString)identifier
 {
 }
+/*
+- (void)addOverlay:(id <MKOverlay>)anOverlay
+{
+    [_overlays addObject:anOverlay];
+}
 
+- (CLLocationCoordinate2D)convertPoint:(CGPoint)point toCoordinateFromView:(CPView)view
+{
+    var mapRect = [self visibleMapRect],
+        bounds = [view bounds],
+        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
+
+    var mapPoint = MKMapPointMake(MKMapRectGetMinX(mapRect) + point.x * ratio, MKMapRectGetMinY(mapRect) + point.y * ratio);
+
+    return MKCoordinateForMapPoint(mapPoint);
+}
+
+- (CGPoint)convertCoordinate:(CLLocationCoordinate2D)coordinate toPointToView:(CPView)view
+{
+    var mapRect = [self visibleMapRect],
+        bounds = [view bounds],
+        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
+
+    var mapPoint = MKMapPointForCoordinate(coordinate);
+
+    return CGPointMake(ratio / (mapPoint.x - MKMapRectGetMinX(mapRect)), ratio / (mapPoint.y - MKMapRectGetMinY(mapRect)));
+}
+
+- (MKCoordinateRegion)convertRect:(CGRect)rect toRegionFromView:(CPView)view
+{
+    var mapRect = [self visibleMapRect],
+        bounds = [view bounds],
+        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
+
+    var newMapRect = MKMapRectMake(MKMapRectGetMinX(mapRect) + CGRectGetMinX(rect) * ratio, MKMapRectGetMinY(mapRect) + CGRectGetMinY(rect) * ratio, CGRectGetWidth(rect) * ratio, CGRectGetHeight(rect) * ratio);
+
+    return MKCoordinateRegionForMapRect(newMapRect);
+}
+
+- (CGRect)convertRegion:(MKCoordinateRegion)region toRectToView:(CPView)view
+{
+    var mapRect = [self visibleMapRect],
+        bounds = [view bounds],
+        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
+
+    var mRect = MKMapRectForCoordinateRegion(region);
+
+    return CGRectMake(ratio / (MKMapRectGetMinX(mRect) - MKMapRectGetMinX(mapRect)), ratio / (MKMapRectGetMinY(mRect) - MKMapRectGetMinY(mapRect)), ratio / MKMapRectGetWidth(mRect), ratio / MKMapRectGetHeight(mRect));
+}
+*/
 - (void)layoutSubviews
 {
     if (_map)
