@@ -25,6 +25,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+var WORLD_SIZE = 268435456;
+
 function MKCoordinateSpan(/*CLLocationDegrees*/ aLatitudeDelta, /*CLLocationDegrees*/ aLongitudeDelta)
 {
     this.latitudeDelta = aLatitudeDelta;
@@ -172,18 +174,16 @@ function MKMapPointMake(/* double*/ x, /*double*/ y)
 
 function MKCoordinateForMapPoint(/*MKMapPoint*/ mapPoint)
 {
-    if (typeof GOOGLE_MAPS_PROJECTION == 'undefined')
-        return CLLocationCoordinate2DMake(0, 0);
-
-    return CLLocationCoordinate2DFromLatLng(GOOGLE_MAPS_PROJECTION.fromPointToLatLng(mapPoint));
+    var projection = MKProjection();
+    
+    return projection.CoordinateForMapPoint(mapPoint);
 }
 
 function MKMapPointForCoordinate(/*CLLocationCoordinate2D*/ coordinate)
 {
-    if (typeof GOOGLE_MAPS_PROJECTION == 'undefined')
-        return MKMapPointMake(0, 0);
-
-    return GOOGLE_MAPS_PROJECTION.fromLatLngToPoint(LatLngFromCLLocationCoordinate2D(coordinate));
+    var projection = MKProjection();
+    
+    return projection.MapPointForCoordinate(coordinate);
 }
 
 function MKMapSize(/* double*/ width, /*double*/ height)
@@ -214,7 +214,7 @@ function MKMapRectMake(/*double*/ x, /*double*/ y, /*double*/ width ,/*double*/ 
 
 function MKMapRectWorld()
 {
-    return MKMapRectMake(0, 0, 256, 256);
+    return MKMapRectMake(0, 0, WORLD_SIZE, WORLD_SIZE);
 }
 
 function MKMapRectZero()
@@ -302,4 +302,66 @@ MKMapRect.prototype.toString = function()
             this.origin.y + ", " +
             this.size.width + ", " +
             this.size.height + "}";
+}
+
+var MKProjection = function()
+{
+    if (typeof this.projection == 'undefined')
+        this.projection = new MercatorProjection();
+    
+    return this.projection;
+}
+
+/** @constructor */
+var MercatorProjection = function()
+{
+    this.pixelOrigin_ = MKMapPointMake(WORLD_SIZE / 2, WORLD_SIZE / 2);
+    this.pixelsPerLonDegree_ = WORLD_SIZE / 360;
+    this.pixelsPerLonRadian_ = WORLD_SIZE / (2 * PI);
+    
+    return this;
+}
+
+MercatorProjection.prototype.MapPointForCoordinate = function(coord)
+{
+    var me = this;
+    var point = MKMapPointMake(0, 0);
+    var origin = me.pixelOrigin_;
+    
+    point.x = origin.x + coord.longitude * me.pixelsPerLonDegree_;
+    
+    // Truncating to 0.9999 effectively limits latitude to 89.189. This is
+    // about a third of a tile past the edge of the world tile.
+    var siny = bound(SIN(degreesToRadians(coord.latitude)), -0.9999, 0.9999);
+    point.y = origin.y + 0.5 * LOG((1 + siny) / (1 - siny)) * -me.pixelsPerLonRadian_;
+    return point;
+};
+
+MercatorProjection.prototype.CoordinateForMapPoint = function(point)
+{
+    var me = this;
+    var origin = me.pixelOrigin_;
+    var lng = (point.x - origin.x) / me.pixelsPerLonDegree_;
+    var latRadians = (point.y - origin.y) / -me.pixelsPerLonRadian_;
+    var lat = radiansToDegrees(2 * ATAN(EXP(latRadians)) - PI / 2);
+        
+    return CLLocationCoordinate2DMake(lat, lng);
+};
+
+function bound(value, opt_min, opt_max)
+{
+    if (opt_min != null) value = MAX(value, opt_min);
+    if (opt_max != null) value = MIN(value, opt_max);
+    
+    return value;
+}
+
+function degreesToRadians(deg)
+{
+    return deg * (PI / 180);
+}
+
+function radiansToDegrees(rad)
+{
+    return rad / (PI / 180);
 }

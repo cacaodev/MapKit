@@ -26,6 +26,12 @@
 
 - (void)calculateDirectionsWithCompletionHandler:(Function/*MKDirectionsResponse response, CPError error*/)completionHandler
 {
+    if (_calculating)
+    {
+        completionHandler(nil, nil);
+        return;
+    }
+
     var service = new google.maps.DirectionsService(),
         g_request = [_request toJSON];
 
@@ -37,17 +43,13 @@
             [response setSource:[_request source]];
             [response setDestination:[_request destination]]; // ???
 
-            var routes = [];
+            var g_routes = results.routes,
+                routes = [];
 
-            if (status !== google.maps.DirectionsStatus.ZERO_RESULTS)
+            for (var i = 0; i < g_routes.length; i++)
             {
-                var g_routes = results.routes;
-
-                for (var i = 0; i < g_routes.length; i++)
-                {
-                    var route = [[MKRoute alloc] initWithJSON:g_routes[i]];
-                    [routes addObject:route];
-                }
+                var route = [[MKRoute alloc] initWithJSON:g_routes[i]];
+                [routes addObject:route];
             }
 
             [response setRoutes:routes];

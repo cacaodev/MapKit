@@ -212,14 +212,14 @@ var CALLBACK_PARAMETERS = [],
         else
             eval(_callbackParameter + " = nil");
 
-        m_finished = YES;
-        [self didChangeValueForKey:@"isFinished"];
-
         [m_completionFunctions enumerateObjectsUsingBlock:function(aFunction, idx)
         {
             if (aFunction)
                 aFunction();
         }];
+
+        m_finished = YES;
+        [self didChangeValueForKey:@"isFinished"];
 
         [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
     }

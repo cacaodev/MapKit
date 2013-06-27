@@ -1,9 +1,11 @@
 @class MKMapItem;
 
-var MKDirectionsTransportType,
-    MKDirectionsTransportTypeAutomobile = 0,
-    MKDirectionsTransportTypeWalking    = 1,
-    MKDirectionsTransportTypeAny        = 2;
+@global google;
+@global MKDirectionsTransportType;
+
+MKDirectionsTransportTypeAutomobile = 0;
+MKDirectionsTransportTypeWalking    = 1;
+MKDirectionsTransportTypeAny        = 2;
 
 var GOOGLE_TRAVEL_MODES = nil;
 
@@ -54,8 +56,8 @@ var GOOGLE_TRAVEL_MODES = nil;
         provideRouteAlternatives:_requestsAlternateRoutes, //Whether or not route alternatives should be provided. Optional.
         //region: Region code used as a bias for geocoding requests. Optional.
         //transitOptions	TransitOptions	Settings that apply only to requests where travelMode is TRANSIT. This object will have no effect for other travel modes.
-        travelMode:	TravelModeForTransportType(_transportType)//	Type of routing requested. Required.
-        //unitSystem	UnitSystem	Preferred unit system to use when displaying distance. Defaults to the unit system used in the country of origin.
+        travelMode:TravelModeForTransportType(_transportType),//	Type of routing requested. Required.
+        unitSystem:google.maps.UnitSystem.METRIC //	UnitSystem	Preferred unit system to use when displaying distance. Defaults to the unit system used in the country of origin.
         //waypoints	Array.<DirectionsWaypoint>	Array of intermediate waypoints. Directions will be calculated from the origin to the destination by way of each waypoint in this array. The maximum allowed waypoints is 8, plus the origin, and destination. Maps API for Business customers are allowed 23 waypoints, plus the origin, and destination. Waypoints are not supported for transit directions. Optional.
     }
 }
@@ -65,7 +67,7 @@ var GOOGLE_TRAVEL_MODES = nil;
 function TravelModeForTransportType(transportType)
 {
     var travelModes = [MKDirectionsRequest g_travelModes];
-console.log(travelModes + " " + transportType);
+
     return travelModes[transportType];
 }
 

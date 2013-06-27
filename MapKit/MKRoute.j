@@ -18,7 +18,7 @@
 
     _name = aJSON.summary;
     _expectedTravelTime = 0;
-    _transportType = nil;
+    _transportType = MKDirectionsTransportTypeAny;
     _advisoryNotices = aJSON.warnings;
     _steps = [CPArray array];
     _distance = 0;
@@ -34,13 +34,20 @@
         for (var j = 0; j < g_steps.length; j++)
         {
             var g_step = g_steps[j];
-            var step = [[MKRouteStep alloc] initWithJSON:g_step];
-            [_steps addObject:step];
+            var routeStep = [[MKRouteStep alloc] initWithJSON:g_step];
+            [_steps addObject:routeStep];
 
             if (g_step.distance)
                 _distance += g_step.distance.value;
 
-            [_polyline _addPolyline:[step polyline]];
+            [_polyline _addPolyline:[routeStep polyline]];
+
+            var transportType = [routeStep transportType];
+
+            if (i == 0)
+                _transportType = transportType;
+            else if (transportType !== _transportType)
+                _transportType = MKDirectionsTransportTypeAny;
         }
 
         if (g_leg.duration)
@@ -52,7 +59,7 @@
 
 - (CPString)description
 {
-    return "<" + [self className] + " name:" + _name + " travelTime:" + _expectedTravelTime + " advisoryNotices:" + _advisoryNotices + " distance: " + _distance + "m. polyline:" + _polyline + " steps:" + [_steps description] + ">";
+    return "<" + [self className] + " name:" + _name + " transportType:" + _transportType + " travelTime:" + _expectedTravelTime + "s. advisoryNotices:" + _advisoryNotices + " distance: " + _distance + "m. polyline:" + _polyline + " steps:" + [_steps description] + ">";
 }
 
 @end

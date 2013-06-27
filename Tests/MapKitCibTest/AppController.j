@@ -190,25 +190,30 @@ CPLogRegister(CPLogConsole);
 
 - (void)awakeFromCib
 {
-    console.log(_cmd);
+    CPLog.debug(_cmd);
+}
+
+- (void)applicationDidFinishLaunching:(CPNotification)aNotification
+{
+    CPLog.debug(_cmd + mapView);
+    [mapView setVisibleMapRect:MKMapRectMake(135848897.4, 92271183.5, 235520.1, 146944.0)];
 }
 
 // Delegate methods
 - (void)mapViewDidFinishLoadingMap:(MKMapView)aMapView
 {
-    console.log(_cmd + aMapView);
-    var mapRect = MKMapRectMake(129.66556735568577, 88.06258736755004, 0.0135498046875, 0.011108398437528);
-    [aMapView setVisibleMapRect:mapRect];
+    CPLog.debug(_cmd + aMapView);
+    //[mapView setVisibleMapRect:MKMapRectMake(135848897.4, 92271183.5, 235520.1, 146944.0)];
 }
 
 - (void)mapViewDidFinishRenderingMap:(MKMapView)aMapView fullyRendered:(BOOL)flag
 {
-    console.log(_cmd + aMapView);
+    CPLog.debug(_cmd + aMapView);
 }
 
 - (void)mapView:(MKMapView)aMapView regionDidChangeAnimated:(BOOL)animated
 {
-    console.log(_cmd + aMapView);
+    CPLog.debug(_cmd + aMapView);
 }
 
 @end

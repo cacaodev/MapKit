@@ -37,7 +37,6 @@
 @class MKPinAnnotationView;
 
 @global google;
-@global GOOGLE_MAPS_PROJECTION;
 
 var _GoogleAPIScriptLoader = nil,
     GOOGLE_API_URL = "http://maps.google.com/maps/api/js?sensor=false&callback=_GoogleMapsLoaded",
@@ -127,18 +126,22 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
         [self _init];
 
-        [self loadGoogleAPI];
     }
 
     return self;
+}
+
+- (void)viewDidMoveToSuperview
+{
+    if ([self superview])
+        [self loadGoogleAPI];
 }
 
 - (void)_init
 {
     [self setBackgroundColor:[CPColor colorWithRed:229.0 / 255.0 green:227.0 / 255.0 blue:223.0 / 255.0 alpha:1.0]];
 
-    _region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(43.9267106305051, 8.42626953125), MKCoordinateSpanMake(18.136124269855493, 35.947265625));
-
+    _region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(46.230469, 2.109375), MKCoordinateSpanMake(17.454362, 40.429673));
     _annotations = [];
     _selectedAnnotations = [];
     _viewForAnnotationMap = {};
@@ -169,11 +172,13 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 - (void)_buildMap
 {
+CPLog.debug(_cmd + [self zoomLevel]);
+
     google.maps.visualRefresh = true;
 
     var options = {
         center: LatLngFromCLLocationCoordinate2D(_region.center),
-        zoom:4,
+        zoom:[self zoomLevel],
         mapTypeId:MAP_TYPES[_mapType],
         scrollwheel:_scrollEnabled,
         zoomControl:_showsZoomControls,
@@ -222,8 +227,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
     event.addListener(_map, "projection_changed", function()
     {
-        GOOGLE_MAPS_PROJECTION = _map.getProjection();
-        CPLog.debug("projection_changed");
+
     });
 }
 
@@ -304,17 +308,48 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 - (void)setRegion:(MKCoordinateRegion)aRegion
 {
     if (_map)
-        _map.fitBounds(LatLngBoundsFromMKCoordinateRegion(aRegion));
+        [self _setRegion:aRegion];
+    else
+    {        
+        var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
+        [invocation setTarget:self];
+        [invocation setSelector:@selector(_setRegion:)];
+        [invocation setArgument:aRegion atIndex:2];
+
+        var loader = [MKMapView GoogleAPIScriptLoader];
+        [loader invoqueWhenLoaded:invocation ignoreMultiple:NO];
+    }
+}
+
+- (void)_setRegion:(MKCoordinateRegion)aRegion
+{
+    _map.fitBounds(LatLngBoundsFromMKCoordinateRegion(aRegion));
 }
 
 - (MKMapRect)visibleMapRect
 {
-    return MKMapRectForCoordinateRegion([self region]);
+    return MKMapRectForCoordinateRegion(_region);
 }
 
 - (void)setVisibleMapRect:(MKMapRect)aMapRect
 {
-    [self setRegion:MKCoordinateRegionForMapRect(aMapRect)];
+    if (_map)
+        [self _setVisibleMapRect:aMapRect];
+    else
+    {        
+        var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
+        [invocation setTarget:self];
+        [invocation setSelector:@selector(_setVisibleMapRect:)];
+        [invocation setArgument:aMapRect atIndex:2];
+
+        var loader = [MKMapView GoogleAPIScriptLoader];
+        [loader invoqueWhenLoaded:invocation ignoreMultiple:NO];
+    }
+}
+
+- (void)_setVisibleMapRect:(MKMapRect)aMapRect
+{
+    [self _setRegion:MKCoordinateRegionForMapRect(aMapRect)];
 }
 
 - (CLLocationCoordinate2D)centerCoordinate
@@ -328,9 +363,11 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
         _map.setCenter(LatLngFromCLLocationCoordinate2D(aCoordinate));
 }
 
-- (float)zoomLevel
+- (CPInteger)zoomLevel
 {
-    return [_options valueForKey:@"zoom"];
+    var m = CGRectGetWidth([self bounds]) / MKMapRectGetWidth([self visibleMapRect]);
+
+    return ROUND(LOG(m) / LN2) + 20;
 }
 
 - (void)setZoomLevel:(float)aZoomLevel
@@ -616,7 +653,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 - (MKAnnotationView)dequeueReusableAnnotationViewWithIdentifier:(CPString)identifier
 {
 }
-/*
+
 - (void)addOverlay:(id <MKOverlay>)anOverlay
 {
     [_overlays addObject:anOverlay];
@@ -625,47 +662,51 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 - (CLLocationCoordinate2D)convertPoint:(CGPoint)point toCoordinateFromView:(CPView)view
 {
     var mapRect = [self visibleMapRect],
-        bounds = [view bounds],
-        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
+        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]);
+        
+    var convertedPoint = [self convertPoint:point fromView:view];
 
-    var mapPoint = MKMapPointMake(MKMapRectGetMinX(mapRect) + point.x * ratio, MKMapRectGetMinY(mapRect) + point.y * ratio);
-
-    return MKCoordinateForMapPoint(mapPoint);
+    return CLLocationCoordinate2DMake(MKMapRectGetMinX(mapRect) + convertedPoint.x * m, MKMapRectGetMinY(mapRect) + convertedPoint.y * m);
 }
+
 
 - (CGPoint)convertCoordinate:(CLLocationCoordinate2D)coordinate toPointToView:(CPView)view
 {
     var mapRect = [self visibleMapRect],
-        bounds = [view bounds],
-        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
+        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]),
+        mapPoint = MKMapPointForCoordinate(coordinate);
+    
+    var point = CGPointMake((mapPoint.x - MKMapRectGetMinX(mapRect)) / m , (mapPoint.y - MKMapRectGetMinY(mapRect)) / m);
 
-    var mapPoint = MKMapPointForCoordinate(coordinate);
-
-    return CGPointMake(ratio / (mapPoint.x - MKMapRectGetMinX(mapRect)), ratio / (mapPoint.y - MKMapRectGetMinY(mapRect)));
+    return [self convertPoint:point toView:view];
 }
+
 
 - (MKCoordinateRegion)convertRect:(CGRect)rect toRegionFromView:(CPView)view
 {
     var mapRect = [self visibleMapRect],
-        bounds = [view bounds],
-        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
-
-    var newMapRect = MKMapRectMake(MKMapRectGetMinX(mapRect) + CGRectGetMinX(rect) * ratio, MKMapRectGetMinY(mapRect) + CGRectGetMinY(rect) * ratio, CGRectGetWidth(rect) * ratio, CGRectGetHeight(rect) * ratio);
+        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([view bounds]);
+    
+    var convertedRect = [self convertRect:rect fromView:view];
+    
+    var newMapRect = MKMapRectMake(MKMapRectGetMinX(mapRect) + CGRectGetMinX(convertedRect) * m, MKMapRectGetMinY(mapRect) + CGRectGetMinY(convertedRect) * m, CGRectGetWidth(convertedRect) * m, CGRectGetHeight(convertedRect) * m);
 
     return MKCoordinateRegionForMapRect(newMapRect);
 }
 
+
 - (CGRect)convertRegion:(MKCoordinateRegion)region toRectToView:(CPView)view
 {
     var mapRect = [self visibleMapRect],
-        bounds = [view bounds],
-        ratio = MKMapRectGetWidth(mapRect) / CGRectGetWidth(bounds);
+        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([view bounds]);
 
     var mRect = MKMapRectForCoordinateRegion(region);
 
-    return CGRectMake(ratio / (MKMapRectGetMinX(mRect) - MKMapRectGetMinX(mapRect)), ratio / (MKMapRectGetMinY(mRect) - MKMapRectGetMinY(mapRect)), ratio / MKMapRectGetWidth(mRect), ratio / MKMapRectGetHeight(mRect));
+    var baseRect = CGRectMake((MKMapRectGetMinX(mRect) - MKMapRectGetMinX(mapRect)) / m, (MKMapRectGetMinY(mRect) - MKMapRectGetMinY(mapRect)) / m, MKMapRectGetWidth(mRect) / m, MKMapRectGetHeight(mRect) / m);
+    
+    return [self convertRect:baseRect toView:view];
 }
-*/
+
 - (void)layoutSubviews
 {
     if (_map)
