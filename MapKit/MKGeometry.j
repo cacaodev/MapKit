@@ -25,7 +25,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-var WORLD_SIZE = 268435456;
+MKWORLD_SIZE = 268435456;
 
 function MKCoordinateSpan(/*CLLocationDegrees*/ aLatitudeDelta, /*CLLocationDegrees*/ aLongitudeDelta)
 {
@@ -186,6 +186,13 @@ function MKMapPointForCoordinate(/*CLLocationCoordinate2D*/ coordinate)
     return projection.MapPointForCoordinate(coordinate);
 }
 
+MKMapPoint.prototype.toString = function()
+{
+    return "{" +
+            this.x + ", " +
+            this.y + "}";
+}
+
 function MKMapSize(/* double*/ width, /*double*/ height)
 {
 	this.width = width;
@@ -196,7 +203,7 @@ function MKMapSize(/* double*/ width, /*double*/ height)
 
 function MKMapSizeMake(/*double*/ width, /*double*/ height)
 {
-	return new MKMapSize(width,height);
+	return new MKMapSize(width, height);
 }
 
 function MKMapRect(/*MKMapPoint*/ origin, /*MKMapSize*/ size)
@@ -209,12 +216,12 @@ function MKMapRect(/*MKMapPoint*/ origin, /*MKMapSize*/ size)
 
 function MKMapRectMake(/*double*/ x, /*double*/ y, /*double*/ width ,/*double*/ height)
 {
-	return new MKMapRect(MKMapPointMake(x,y), MKMapSizeMake(width,height));
+	return new MKMapRect(MKMapPointMake(x, y), MKMapSizeMake(width, height));
 }
 
 function MKMapRectWorld()
 {
-    return MKMapRectMake(0, 0, WORLD_SIZE, WORLD_SIZE);
+    return MKMapRectMake(0, 0, MKWORLD_SIZE, MKWORLD_SIZE);
 }
 
 function MKMapRectZero()
@@ -315,9 +322,9 @@ var MKProjection = function()
 /** @constructor */
 var MercatorProjection = function()
 {
-    this.pixelOrigin_ = MKMapPointMake(WORLD_SIZE / 2, WORLD_SIZE / 2);
-    this.pixelsPerLonDegree_ = WORLD_SIZE / 360;
-    this.pixelsPerLonRadian_ = WORLD_SIZE / (2 * PI);
+    this.pixelOrigin_ = MKMapPointMake(MKWORLD_SIZE / 2, MKWORLD_SIZE / 2);
+    this.pixelsPerLonDegree_ = MKWORLD_SIZE / 360;
+    this.pixelsPerLonRadian_ = MKWORLD_SIZE / (2 * PI);
     
     return this;
 }

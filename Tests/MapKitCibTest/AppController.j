@@ -29,38 +29,7 @@ CPLogRegister(CPLogConsole);
     @outlet CPTableView tableView;
 
     CPArray annotations @accessors;
-}
-
-- (IBAction)geocode:(id)sender
-{
-    var address = [sender stringValue];
-    var geocoder = [[MKGeocoder alloc] init];
-
-    [geocoder geocodeAddressString:address inRegion:nil completionHandler:function(placemarks, error)
-    {
-        if (error)
-            CPLogConsole(error);
-        else
-        {
-            var location = [placemarks[0] coordinate];
-            [mapView setCenterCoordinate:location];
-        }
-    }];
-}
-
-- (IBAction)showAnnotations:(id)sender
-{
-    var rowIndexes = [tableView selectedRowIndexes];
-
-    var anns = ([rowIndexes count] > 0) ? [annotations objectsAtIndexes:rowIndexes] : annotations;
-
-    [mapView showAnnotations:anns animated:NO];
-}
-
-- (IBAction)setMapType:(id)sender
-{
-    var type = [sender tagForSegment:[sender selectedSegment]];
-    [mapView setMapType:type];
+    CPArray steps       @accessors;
 }
 
 - (id)init
@@ -68,6 +37,7 @@ CPLogRegister(CPLogConsole);
     self = [super init];
 
     annotations = [CPArray array];
+    steps = [CPArray array];
 
     [self addObserver:self forKeyPath:@"annotations" options:CPKeyValueObservingOptionNew context:nil];
 
@@ -81,9 +51,14 @@ CPLogRegister(CPLogConsole);
     if (kind == 2)
     {
         var annotation = [[change objectForKey:CPKeyValueChangeNewKey] firstObject],
+            location = [annotation coordinate];
+        
+        if (!location)
+        {
             location = [mapView centerCoordinate];
-
-        [annotation setCoordinate:location];
+            [annotation setCoordinate:location];
+        }
+            
         [mapView addAnnotation:annotation];
 
         var geocoder = [[MKGeocoder alloc] init];
@@ -121,7 +96,7 @@ CPLogRegister(CPLogConsole);
     var indexes = [[aNotification object] selectedRowIndexes],
         selection = [annotations objectsAtIndexes:indexes];
 
-    [mapView setSelectedAnnotations:selection];
+// change state
 }
 
 - (void)findDirectionsFrom:(MKMapItem)source to:(MKMapItem)destination
@@ -138,26 +113,82 @@ CPLogRegister(CPLogConsole);
 
     [directions calculateDirectionsWithCompletionHandler:function(response, error)
     {
-       if (error == nil)
-       {
-           CPLog.debug("response " + [response description]);
-       }
+        var theSteps = [CPArray array];
+        
+        if (error == nil)
+        {
+            CPLog.debug("response " + [response description]);
+            var r = [[response routes] firstObject],
+                s = [r steps];
+
+            [theSteps addObjectsFromArray:s];
+            var polyline = [r polyline];
+            [polyline setTitle:"route"];
+            [mapView addOverlay:polyline];
+        }
+        
+        [self setSteps:theSteps];
     }];
+}
+
+- (void)renderRouteSteps:(CPArray)theSteps
+{
+    [theSteps enumerateObjectsUsingBlock:function(aStep, idx, stop)
+    {
+        var polyline = [aStep polyline],
+            start = [[polyline points] firstObject];
+            
+        var coordinate = MKCoordinateForMapPoint(start);
+            
+        var circle = [MKCircle circleWithCenterCoordinate:coordinate radius:10];
+        [mapView addOverlay:circle];
+    }];
+}
+
+- (IBAction)geocode:(id)sender
+{
+    var address = [sender stringValue];
+    var geocoder = [[MKGeocoder alloc] init];
+
+    [geocoder geocodeAddressString:address inRegion:nil completionHandler:function(placemarks, error)
+    {
+        if (error)
+            CPLogConsole(error);
+        else
+        {
+            var annotation = placemarks[0];
+            
+            [self insertObject:annotation inAnnotationsAtIndex:[annotations count]];
+            [mapView setCenterCoordinate:[annotation coordinate]];
+        }
+    }];
+}
+
+- (IBAction)showAnnotations:(id)sender
+{
+    var rowIndexes = [tableView selectedRowIndexes];
+
+    var anns = ([rowIndexes count] > 0) ? [annotations objectsAtIndexes:rowIndexes] : annotations;
+
+    [mapView showAnnotations:anns animated:NO];
+}
+
+- (IBAction)setMapType:(id)sender
+{
+    var type = [sender tagForSegment:[sender selectedSegment]];
+    [mapView setMapType:type];
 }
 
 - (IBAction)directions:(id)sender
 {
-    var indexes = [tableView selectedRowIndexes],
-        selection = [annotations objectsAtIndexes:indexes];
-
-    if ([selection count] < 2)
+    if ([annotations count] < 2)
         return;
 
     var p = [[MKPlacemark alloc] init];
-    [p setLocation:[selection[0] coordinate]];
+    [p setLocation:[[annotations firstObject] coordinate]];
 
     var pp = [[MKPlacemark alloc] init];
-    [pp setLocation:[selection[1] coordinate]];
+    [pp setLocation:[[annotations lastObject] coordinate]];
 
     [mapView addAnnotations:[p, pp]];
 
@@ -165,6 +196,35 @@ CPLogRegister(CPLogConsole);
         end = [[MKMapItem alloc] initWithPlacemark:pp];
 
     [self findDirectionsFrom:start to:end];
+}
+
+- (IBAction)addOverlay:(id)sender
+{
+    if ([annotations count] < 2)
+        return;
+   
+    var coordinates = [];
+    [annotations enumerateObjectsUsingBlock:function(ann, idx, stop)
+    {
+        coordinates.push([ann coordinate]);    
+    }];
+
+    var polyline = [MKPolyline polylineWithCoordinates:coordinates count:coordinates.length];
+    [polyline setTitle:"direct"];
+    [mapView addOverlay:polyline];
+}
+
+- (IBAction)removeOverlays:(id)sender
+{
+    [mapView removeOverlays:[mapView overlays]];
+}
+
+- (IBAction)selectAnnotation:(id)sender
+{
+    var row = [tableView rowForView:sender],
+        anns = [annotations objectsAtIndexes:[CPIndexSet indexSetWithIndex:row]];
+        
+    [mapView setSelectedAnnotations:anns];
 }
 
 // Accessors
@@ -208,12 +268,42 @@ CPLogRegister(CPLogConsole);
 
 - (void)mapViewDidFinishRenderingMap:(MKMapView)aMapView fullyRendered:(BOOL)flag
 {
-    CPLog.debug(_cmd + aMapView);
+    //CPLog.debug(_cmd + aMapView);
 }
 
 - (void)mapView:(MKMapView)aMapView regionDidChangeAnimated:(BOOL)animated
 {
+    //CPLog.debug(_cmd + aMapView);
+}
+
+- (id)mapView:(MKMapView)aMapView rendererForOverlay:(id)anOverlay
+{
     CPLog.debug(_cmd + aMapView);
+    var title = [anOverlay title],
+        renderer = nil;
+    
+    if (title == @"direct")
+    {
+        renderer = [[MKPolylineRenderer alloc] initWithPolyline:anOverlay];
+        [renderer setStrokeColor:[CPColor blueColor]];
+        [renderer setLineWidth:4.0];
+    }
+    else if (title == @"route")
+    {
+        renderer = [[MKPolylineRenderer alloc] initWithPolyline:anOverlay];
+        [renderer setStrokeColor:[CPColor orangeColor]];
+        [renderer setLineWidth:2.0];
+    }
+    else if (title == @"circle")
+    {
+        renderer = [[MKCircleRenderer alloc] initWithCircle:anOverlay];
+        [renderer setFillColor:[CPColor blueColor]];
+
+        [renderer setStrokeColor:[CPColor redColor]];
+        [renderer setLineWidth:2];
+    }
+    
+    return renderer;
 }
 
 @end

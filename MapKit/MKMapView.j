@@ -75,12 +75,15 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     CPArray                 _annotations @accessors(getter=annotations);
     CPArray                 _selectedAnnotations @accessors(getter=selectedAnnotations);
     CPDictionary            _reusableAnnotationViews;
-    CPArray                 _overlays;
+    CPArray                 _overlays @accessors(getter=overlays);
 
     MapOptions              _options @accessors(property=options);
     Object                  _quadTree;
+    Object                  _overlayQuadTree;
     unsigned int            _MKMapViewDelegateMethods;
     Object                  _viewForAnnotationMap;
+    Object                  RendererForOverlay;
+    Object                  OverlayForUID;
 }
 
 + (void)initialize
@@ -125,7 +128,6 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
         _showsZoomControls = NO;
 
         [self _init];
-
     }
 
     return self;
@@ -150,7 +152,10 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     _delegateDidSendFinishLoading = NO;
     _options = [[MapOptions alloc] init];
     _quadTree = nil;
+    _overlayQuadTree = nil;
     _MKMapViewDelegateMethods = 0;
+    RendererForOverlay = {};
+    OverlayForUID = {};
 }
 
 - (id)loadGoogleAPI
@@ -172,7 +177,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 - (void)_buildMap
 {
-CPLog.debug(_cmd + [self zoomLevel]);
+CPLog.debug(_cmd);
 
     google.maps.visualRefresh = true;
 
@@ -192,7 +197,7 @@ CPLog.debug(_cmd + [self zoomLevel]);
 
     _DOMMapElement = contentView._DOMElement;
     _map = new google.maps.Map(_DOMMapElement, options);
-
+    
     [_options setMapObject:_map];
 
     [self _sendDidFinishLoadingNotificationIfNeeded];
@@ -208,8 +213,8 @@ CPLog.debug(_cmd + [self zoomLevel]);
 
         if (_MKMapViewDelegateMethods & delegate_mapView_regionDidChangeAnimated)
             [delegate mapView:self regionDidChangeAnimated:NO];
-
-        CPLog.debug("bounds_changed");
+            
+        [self drawVisibleOverlays];
     });
 
     event.addListener(_map, "maptypeid_changed", function()
@@ -223,11 +228,6 @@ CPLog.debug(_cmd + [self zoomLevel]);
     {
         if (_MKMapViewDelegateMethods & delegate_mapViewDidFinishRenderingMap_fullyRendered)
             [delegate mapViewDidFinishRenderingMap:self fullyRendered:YES];
-    });
-
-    event.addListener(_map, "projection_changed", function()
-    {
-
     });
 }
 
@@ -290,7 +290,7 @@ CPLog.debug(_cmd + [self zoomLevel]);
     delegate = aDelegate;
 }
 
-- (Object)namespace
+- (Object)map
 {
     return _map;
 }
@@ -365,9 +365,12 @@ CPLog.debug(_cmd + [self zoomLevel]);
 
 - (CPInteger)zoomLevel
 {
-    var m = CGRectGetWidth([self bounds]) / MKMapRectGetWidth([self visibleMapRect]);
+    return ROUND(LOG([self zoomScale]) / LN2) + 20;
+}
 
-    return ROUND(LOG(m) / LN2) + 20;
+- (float)zoomScale
+{
+    return CGRectGetWidth([self bounds]) / MKMapRectGetWidth([self visibleMapRect]);
 }
 
 - (void)setZoomLevel:(float)aZoomLevel
@@ -654,9 +657,112 @@ CPLog.debug(_cmd + [self zoomLevel]);
 {
 }
 
-- (void)addOverlay:(id <MKOverlay>)anOverlay
+// Overlays;
+- (void)addOverlay:(id)anOverlay
 {
-    [_overlays addObject:anOverlay];
+    [self addOverlays:[CPArray arrayWithObject:anOverlay]];
+}
+
+- (void)addOverlays:(CPArray)overlays
+{
+    if (![overlays count])
+        return;
+        
+    if (!_overlayQuadTree)
+        _overlayQuadTree = QUAD.init({x:0, y:0, w:MKWORLD_SIZE, h:MKWORLD_SIZE});
+
+    [_overlays addObjectsFromArray:overlays];
+    
+    [self addOverlaysToQuadTree:overlays];
+    [self drawVisibleOverlays];
+}
+
+- (void)addOverlaysToQuadTree:(CPArray)overlays
+{
+    var quad_nodes = [];
+    
+    [overlays enumerateObjectsUsingBlock:function(anOverlay, idx, stop)
+    {                    
+        var boundingMapRect = [anOverlay boundingMapRect];
+        
+        quad_nodes.push({overlay:anOverlay, x:MKMapRectGetMinX(boundingMapRect), y:MKMapRectGetMinY(boundingMapRect), w:MKMapRectGetWidth(boundingMapRect), h:MKMapRectGetHeight(boundingMapRect)});
+    }];
+    
+    _overlayQuadTree.insert(quad_nodes);
+}
+
+- (void)removeOverlay:(id)anOverlay
+{
+    [self removeOverlays:[CPArray arrayWithObject:anOverlay]];
+}
+
+- (void)removeOverlays:(CPArray)overlays
+{
+    if (![overlays count])
+        return;
+        
+    [overlays enumerateObjectsUsingBlock:function(anOverlay, idx, stop)
+    {
+        var uuid = [anOverlay UID],
+            renderer = RendererForOverlay[uuid];
+        
+        if (renderer)
+        {
+            [renderer _remove];
+            delete(RendererForOverlay[uuid]);
+        }
+    }];
+    
+    [_overlays removeObjectsInArray:overlays];
+    
+    _overlayQuadTree.clear();
+    [self addOverlaysToQuadTree:_overlays];
+}
+
+- (id)_rendererForOverlay:(id)anOverlay
+{
+    var uuid = [anOverlay UID],
+        renderer = RendererForOverlay[uuid];
+    
+    if (!renderer && (_MKMapViewDelegateMethods & delegate_mapView_rendererForOverlay))
+    {
+        renderer = [delegate mapView:self rendererForOverlay:anOverlay];
+        RendererForOverlay[uuid] = renderer;
+    }
+
+    return renderer;  
+}
+
+- (void)drawVisibleOverlays
+{
+    if (!_overlayQuadTree)
+        return;
+
+    var visibleMapRect = [self visibleMapRect];
+    
+    _overlayQuadTree.retrieve(visibleMapRect, function(item)
+    {            
+        var mapRect = MKMapRectMake(item.x, item.y, item.w, item.h);
+        if (CGRectIntersectsRect(mapRect, visibleMapRect))
+        {
+            var overlay = item.overlay;
+            
+            [self _drawOverlay:overlay inMapRect:visibleMapRect];
+        }
+    });
+}
+
+- (void)_drawOverlay:(id)overlay inMapRect:(MKMapRect)mapRect
+{
+    var boundingMapRect = [overlay boundingMapRect];
+
+    var renderer = [self _rendererForOverlay:overlay],
+        zoomScale = [self zoomScale];
+    
+    [renderer _setContentScaleFactor:zoomScale];
+    
+    if ([renderer canDrawMapRect:mapRect zoomScale:zoomScale])
+        [renderer _drawMapRect:mapRect zoomScale:zoomScale inMap:self];
 }
 
 - (CLLocationCoordinate2D)convertPoint:(CGPoint)point toCoordinateFromView:(CPView)view
@@ -669,23 +775,27 @@ CPLog.debug(_cmd + [self zoomLevel]);
     return CLLocationCoordinate2DMake(MKMapRectGetMinX(mapRect) + convertedPoint.x * m, MKMapRectGetMinY(mapRect) + convertedPoint.y * m);
 }
 
-
-- (CGPoint)convertCoordinate:(CLLocationCoordinate2D)coordinate toPointToView:(CPView)view
+- (CGPoint)convertMapPoint:(MKMapPoint)aMapPoint toPointToView:(CPView)view
 {
     var mapRect = [self visibleMapRect],
-        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]),
-        mapPoint = MKMapPointForCoordinate(coordinate);
+        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]);
     
-    var point = CGPointMake((mapPoint.x - MKMapRectGetMinX(mapRect)) / m , (mapPoint.y - MKMapRectGetMinY(mapRect)) / m);
+    var point = CGPointMake((aMapPoint.x - MKMapRectGetMinX(mapRect)) / m , (aMapPoint.y - MKMapRectGetMinY(mapRect)) / m);
 
     return [self convertPoint:point toView:view];
 }
 
+- (CGPoint)convertCoordinate:(CLLocationCoordinate2D)coordinate toPointToView:(CPView)view
+{
+    var mapPoint = MKMapPointForCoordinate(coordinate);
+
+    return [self convertMapPoint:mapPoint toPointToView:view];
+}
 
 - (MKCoordinateRegion)convertRect:(CGRect)rect toRegionFromView:(CPView)view
 {
     var mapRect = [self visibleMapRect],
-        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([view bounds]);
+        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]);
     
     var convertedRect = [self convertRect:rect fromView:view];
     
@@ -697,12 +807,17 @@ CPLog.debug(_cmd + [self zoomLevel]);
 
 - (CGRect)convertRegion:(MKCoordinateRegion)region toRectToView:(CPView)view
 {
-    var mapRect = [self visibleMapRect],
-        m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([view bounds]);
+    var mapRect = MKMapRectForCoordinateRegion(region);
+    
+    return [self convertMapRect:mapRect toRectToView:view];
+}
 
-    var mRect = MKMapRectForCoordinateRegion(region);
+- (CGRect)convertMapRect:(MKMapRect)aMapRect toRectToView:(CPView)view
+{
+    var visibleMapRect = [self visibleMapRect],
+        m = MKMapRectGetWidth(visibleMapRect) / CGRectGetWidth([self bounds]);
 
-    var baseRect = CGRectMake((MKMapRectGetMinX(mRect) - MKMapRectGetMinX(mapRect)) / m, (MKMapRectGetMinY(mRect) - MKMapRectGetMinY(mapRect)) / m, MKMapRectGetWidth(mRect) / m, MKMapRectGetHeight(mRect) / m);
+    var baseRect = CGRectMake((MKMapRectGetMinX(aMapRect) - MKMapRectGetMinX(visibleMapRect)) / m, (MKMapRectGetMinY(aMapRect) - MKMapRectGetMinY(visibleMapRect)) / m, MKMapRectGetWidth(aMapRect) / m, MKMapRectGetHeight(aMapRect) / m);
     
     return [self convertRect:baseRect toView:view];
 }
@@ -714,6 +829,7 @@ CPLog.debug(_cmd + [self zoomLevel]);
 }
 
 @end
+
 
 var MKMapTypeKey            = @"MKMapType",
     MKScroolEnabledKey      = @"MKScroolEnabled";

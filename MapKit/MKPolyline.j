@@ -2,7 +2,7 @@
 
 @implementation MKPolyline : MKMultiPoint
 {
-
+    MKMapRect _boundingMapRect;
 }
 
 + (MKPolyline)polylineWithCoordinates:(CPArray)coords count:(CPInteger)count
@@ -28,6 +28,7 @@
 
     _points = points;
     _pointCount = count;
+    _boundingMapRect = nil;
 
     return self;
 }
@@ -36,6 +37,7 @@
 {
     _points.push(aPoint);
     _pointCount++;
+    _boundingMapRect = nil;
 }
 
 - (void)_addPolyline:(MKPolyline)aPolyline
@@ -44,6 +46,48 @@
 
     [_points addObjectsFromArray:points];
     _pointCount += [points count];
+    _boundingMapRect = nil;
+}
+
+- (MKMapRect)boundingMapRect
+{
+    if (!_boundingMapRect)
+        _boundingMapRect = _MKMapRectForPoints(_points, _pointCount);
+    
+    return _boundingMapRect;
 }
 
 @end
+
+var _MKMapRectForPoints = function(points, pointCount)
+{
+    if (pointCount === 0)
+        return MKMapRectMake(0, 0, 0, 0);
+        
+    var originPoint = points[0];
+    
+    if (pointCount === 1)
+        return MKMapRectMake(originPoint.x, originPoint.y, 0, 0);
+    
+    var minPoint = MKMapPointMake(originPoint.x, originPoint.y),
+        maxPoint = MKMapPointMake(originPoint.x, originPoint.y);
+     
+    for (var i = 1; i < pointCount; i++)
+    {
+        var p = points[i],
+            x = p.x,
+            y = p.y;
+        
+        if (x < minPoint.x)
+            minPoint.x = x;
+        else if (x > maxPoint.x)
+            maxPoint.x = x;
+        
+        if (y < minPoint.y)
+            minPoint.y = y;
+        else if (y > maxPoint.y)
+            maxPoint.y = y;        
+    }
+    
+    return MKMapRectMake(minPoint.x, minPoint.y, maxPoint.x - minPoint.x, maxPoint.y - minPoint.y);
+};

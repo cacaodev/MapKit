@@ -38,6 +38,11 @@
         panes.overlayMouseTarget.appendChild(this.domElement);
     };
 
+    GMOverlay.prototype.onRemove = function() {
+        this.domElement.parentNode.removeChild(this.domElement);
+        this.domElement = null;
+    };
+    
     GMOverlay.prototype.draw = function()
     {
         console.log("draw" + this.toString());
@@ -92,7 +97,7 @@
             position: LatLngFromCLLocationCoordinate2D([annotation coordinate]),
             //draggable:draggable,
             clickable:enabled,
-            anchorPoint:calloutOffset,
+            //anchorPoint:calloutOffset,
             title:[annotation title],
             animation:google.maps.Animation.DROP
         });
@@ -102,7 +107,7 @@
             var size = [_image size];
             var icon = {
                 url:[_image filename],
-                anchor:{x:size.width/2, y:size.height},
+                anchor:{x:centerOffset.x, y:centerOffset.y},
                 size:{width:size.width, height:size.height}
             };
 
@@ -164,13 +169,28 @@
 {
     _marker.setMap(null);
     _marker = nil;
-    _overlay = nil;
-    _infoWindow = nil;
+    
+    if (_overlay)
+    {
+        _overlay.onRemove();
+        _overlay = nil;
+    }
+    
+    if (_infoWindow)
+    {
+        _infoWindow.close();
+        _infoWindow = nil;
+    }
 }
 
 - (void)prepareForReuse
 {
 
+}
+
+- (void)setSelected:(BOOL)shouldSelect
+{
+    [self setSelected:shouldSelect animated:NO];
 }
 
 - (void)setSelected:(BOOL)shouldSelect animated:(BOOL)animated

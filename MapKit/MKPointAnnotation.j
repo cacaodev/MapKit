@@ -5,4 +5,13 @@
     CLLocationCoordinate2D _coordinate @accessors(property=coordinate);
 }
 
+- (id)init
+{
+    self = [super init];
+    
+    _coordinate = nil;
+    
+    return self;
+}
+
 @end
