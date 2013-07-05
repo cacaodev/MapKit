@@ -292,7 +292,8 @@ CPLogRegister(CPLogConsole);
     {
         renderer = [[MKPolylineRenderer alloc] initWithPolyline:anOverlay];
         [renderer setStrokeColor:[CPColor orangeColor]];
-        [renderer setLineWidth:2.0];
+        [renderer setLineDashPattern:[4,1]];
+        [renderer setLineWidth:4.0];
     }
     else if (title == @"circle")
     {

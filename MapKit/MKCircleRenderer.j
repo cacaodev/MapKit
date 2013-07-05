@@ -33,10 +33,10 @@
 
 - (void)createPath
 {
-    var rect = [self rectForMapRect:[_overlay boundingMapRect]];
+    var rect = [self rectForMapRect:[_overlay boundingMapRect]],
+        radius = [_overlay radius];
     
-    var r = CGRectMake(ROUND(rect.origin.x), ROUND(rect.origin.y), ROUND(rect.size.width), ROUND(rect.size.height));
-    _path = CGPathWithEllipseInRect(rect);
+    _path = CGPathWithRoundedRectangleInRect(rect, radius, radius, YES, YES, YES, YES);
 }
 
 @end

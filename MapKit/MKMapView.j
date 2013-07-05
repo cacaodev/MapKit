@@ -77,13 +77,14 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     CPDictionary            _reusableAnnotationViews;
     CPArray                 _overlays @accessors(getter=overlays);
 
-    MapOptions              _options @accessors(property=options);
-    Object                  _quadTree;
-    Object                  _overlayQuadTree;
     unsigned int            _MKMapViewDelegateMethods;
-    Object                  _viewForAnnotationMap;
-    Object                  RendererForOverlay;
-    Object                  OverlayForUID;
+
+    MapOptions              _options @accessors(property=options);
+
+    Object                  _annotationsQuadTree;
+    Object                  _overlaysQuadTree;
+    Object                  _ViewForAnnotation;
+    Object                  _RendererForOverlay;
 }
 
 + (void)initialize
@@ -146,16 +147,15 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     _region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(46.230469, 2.109375), MKCoordinateSpanMake(17.454362, 40.429673));
     _annotations = [];
     _selectedAnnotations = [];
-    _viewForAnnotationMap = {};
     _reusableAnnotationViews = @{};
     _overlays = [];
     _delegateDidSendFinishLoading = NO;
     _options = [[MapOptions alloc] init];
-    _quadTree = nil;
-    _overlayQuadTree = nil;
+    _annotationsQuadTree = nil;
+    _overlaysQuadTree = nil;
     _MKMapViewDelegateMethods = 0;
-    RendererForOverlay = {};
-    OverlayForUID = {};
+    _ViewForAnnotation = {};
+    _RendererForOverlay = {};
 }
 
 - (id)loadGoogleAPI
@@ -360,17 +360,32 @@ CPLog.debug(_cmd);
 - (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
     if (_map)
-        _map.setCenter(LatLngFromCLLocationCoordinate2D(aCoordinate));
+        [self _setCenterCoordinate:aCoordinate];
+    else
+    {        
+        var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
+        [invocation setTarget:self];
+        [invocation setSelector:@selector(_setCenterCoordinate:)];
+        [invocation setArgument:aCoordinate atIndex:2];
+
+        var loader = [MKMapView GoogleAPIScriptLoader];
+        [loader invoqueWhenLoaded:invocation ignoreMultiple:NO];
+    }
 }
 
-- (CPInteger)zoomLevel
+- (void)_setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
-    return ROUND(LOG([self zoomScale]) / LN2) + 20;
+    _map.setCenter(LatLngFromCLLocationCoordinate2D(aCoordinate));
 }
 
 - (float)zoomScale
 {
     return CGRectGetWidth([self bounds]) / MKMapRectGetWidth([self visibleMapRect]);
+}
+
+- (CPInteger)zoomLevel
+{
+    return ROUND(LOG([self zoomScale]) / LN2) + 20;
 }
 
 - (void)setZoomLevel:(float)aZoomLevel
@@ -380,10 +395,24 @@ CPLog.debug(_cmd);
 
 - (void)setMapType:(MKMapType)aMapType
 {
-    _mapType = aMapType;
-
     if (_map)
-        _map.setMapTypeId(MAP_TYPES[_mapType]);
+        [self _setMapType:aMapType];
+    else
+    {        
+        var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
+        [invocation setTarget:self];
+        [invocation setSelector:@selector(_setMapType:)];
+        [invocation setArgument:aMapType atIndex:2];
+
+        var loader = [MKMapView GoogleAPIScriptLoader];
+        [loader invoqueWhenLoaded:invocation ignoreMultiple:NO];
+    }
+}
+
+- (void)_setMapType:(MKMapType)aMapType
+{
+    _mapType = aMapType;
+    _map.setMapTypeId(MAP_TYPES[_mapType]);
 }
 
 - (MKMapType)mapType
@@ -474,30 +503,23 @@ CPLog.debug(_cmd);
 
 - (void)_addAnnotations:(CPArray)aAnnotationArray
 {
-	var annotationsCount = [aAnnotationArray count],
-	    quad_nodes = [];
+	var annotationsCount = [aAnnotationArray count];
 
 	for (var i = 0; i < annotationsCount; i++)
 	{
 		var annotation = aAnnotationArray[i],
-		    point = MKMapPointForCoordinate([annotation coordinate]),
 		    annotationView = [self _dequeueViewForAnnotation:annotation];
 
         [annotationView _updateMarkerAndOverlayForMap:_map];
-
+		_ViewForAnnotation[[annotation UID]] = annotationView;
+		
 		[_annotations addObject:annotation];
-		_viewForAnnotationMap[[annotation UID]] = annotationView;
-
-		quad_nodes.push({annotation:annotation, x:point.x, y:point.y});
 	}
 
-    if (!_quadTree)
-    {
-        var world = MKMapRectWorld();
-        _quadTree = QUAD.init({x:MKMapRectGetMinX(world), y:MKMapRectGetMinY(world), w:MKMapRectGetWidth(world), h:MKMapRectGetHeight(world)});
-    }
+    if (!_annotationsQuadTree)
+        _annotationsQuadTree = QUAD.init({x:0, y:0, w:MKWORLD_SIZE, h:MKWORLD_SIZE});
 
-    _quadTree.insert(quad_nodes);
+    [self addAnnotationsToQuadTree:aAnnotationArray];
 }
 
 - (MKAnnotationView)_dequeueViewForAnnotation:(id <MKAnnotation>)annotation
@@ -532,11 +554,14 @@ CPLog.debug(_cmd);
         if (view)
         {
             [view _removeMarker];
-            delete _viewForAnnotationMap[[annotation UID]];
+            delete _ViewForAnnotation[[annotation UID]];
         }
 
         [_annotations removeObjectIdenticalTo:annotation];
     }
+    
+    _annotationsQuadTree.clear();
+    [self addAnnotationsToQuadTree:_annotations];
 }
 
 /*
@@ -546,7 +571,7 @@ CPLog.debug(_cmd);
 */
 - (MKAnnotationView)viewForAnnotation:(id <MKAnnotation>)anAnnotation
 {
-    return _viewForAnnotationMap[[anAnnotation UID]];
+    return _ViewForAnnotation[[anAnnotation UID]];
 }
 
 /*
@@ -566,7 +591,7 @@ CPLog.debug(_cmd);
         size = mapRect.size,
         quad_rect = {x:origin.x, y:origin.y, w:size.width, h:size.height};
 
-    _quadTree.retrieve(quad_rect, function(item)
+    _annotationsQuadTree.retrieve(quad_rect, function(item)
     {
         if (MKMapRectContainsPoint(mapRect, item))
             [result addObject:item.annotation];
@@ -668,8 +693,8 @@ CPLog.debug(_cmd);
     if (![overlays count])
         return;
         
-    if (!_overlayQuadTree)
-        _overlayQuadTree = QUAD.init({x:0, y:0, w:MKWORLD_SIZE, h:MKWORLD_SIZE});
+    if (!_overlaysQuadTree)
+        _overlaysQuadTree = QUAD.init({x:0, y:0, w:MKWORLD_SIZE, h:MKWORLD_SIZE});
 
     [_overlays addObjectsFromArray:overlays];
     
@@ -677,18 +702,35 @@ CPLog.debug(_cmd);
     [self drawVisibleOverlays];
 }
 
+- (void)addAnnotationsToQuadTree:(CPArray)annotations
+{
+    [self insertObjects:annotations inQuadTree:_annotationsQuadTree usingNodeFunction:function(anAnnotation)
+    {
+        var point = MKMapPointForCoordinate([anAnnotation coordinate]);
+        return {annotation:anAnnotation, x:point.x, y:point.y};
+    }];
+}
+
 - (void)addOverlaysToQuadTree:(CPArray)overlays
+{
+    [self insertObjects:overlays inQuadTree:_overlaysQuadTree usingNodeFunction:function(anOverlay)
+    {
+        var boundingMapRect = [anOverlay boundingMapRect];
+        return {overlay:anOverlay, x:MKMapRectGetMinX(boundingMapRect), y:MKMapRectGetMinY(boundingMapRect), w:MKMapRectGetWidth(boundingMapRect), h:MKMapRectGetHeight(boundingMapRect)};
+    }];
+}
+
+- (void)insertObjects:(CPArray)objects inQuadTree:(Object)aQuadTree usingNodeFunction:(Function/*object*/)aFunction
 {
     var quad_nodes = [];
     
-    [overlays enumerateObjectsUsingBlock:function(anOverlay, idx, stop)
+    [objects enumerateObjectsUsingBlock:function(object, idx, stop)
     {                    
-        var boundingMapRect = [anOverlay boundingMapRect];
-        
-        quad_nodes.push({overlay:anOverlay, x:MKMapRectGetMinX(boundingMapRect), y:MKMapRectGetMinY(boundingMapRect), w:MKMapRectGetWidth(boundingMapRect), h:MKMapRectGetHeight(boundingMapRect)});
+        var node = aFunction(object);
+        quad_nodes.push(node);
     }];
     
-    _overlayQuadTree.insert(quad_nodes);
+    aQuadTree.insert(quad_nodes);
 }
 
 - (void)removeOverlay:(id)anOverlay
@@ -704,30 +746,30 @@ CPLog.debug(_cmd);
     [overlays enumerateObjectsUsingBlock:function(anOverlay, idx, stop)
     {
         var uuid = [anOverlay UID],
-            renderer = RendererForOverlay[uuid];
+            renderer = _RendererForOverlay[uuid];
         
         if (renderer)
         {
             [renderer _remove];
-            delete(RendererForOverlay[uuid]);
+            delete(_RendererForOverlay[uuid]);
         }
     }];
     
     [_overlays removeObjectsInArray:overlays];
     
-    _overlayQuadTree.clear();
+    _overlaysQuadTree.clear();
     [self addOverlaysToQuadTree:_overlays];
 }
 
 - (id)_rendererForOverlay:(id)anOverlay
 {
     var uuid = [anOverlay UID],
-        renderer = RendererForOverlay[uuid];
+        renderer = _RendererForOverlay[uuid];
     
     if (!renderer && (_MKMapViewDelegateMethods & delegate_mapView_rendererForOverlay))
     {
         renderer = [delegate mapView:self rendererForOverlay:anOverlay];
-        RendererForOverlay[uuid] = renderer;
+        _RendererForOverlay[uuid] = renderer;
     }
 
     return renderer;  
@@ -735,12 +777,12 @@ CPLog.debug(_cmd);
 
 - (void)drawVisibleOverlays
 {
-    if (!_overlayQuadTree)
+    if (!_overlaysQuadTree)
         return;
 
     var visibleMapRect = [self visibleMapRect];
     
-    _overlayQuadTree.retrieve(visibleMapRect, function(item)
+    _overlaysQuadTree.retrieve(visibleMapRect, function(item)
     {            
         var mapRect = MKMapRectMake(item.x, item.y, item.w, item.h);
         if (CGRectIntersectsRect(mapRect, visibleMapRect))

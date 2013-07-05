@@ -25,7 +25,7 @@
     _radius = radius;
     
     var midWidth = _radius / 40075017 * MKWORLD_SIZE,
-        width = ROUND(2 * midWidth);
+        width = 2 * midWidth;
         
     var center = MKMapPointForCoordinate(_coordinate);
     _boundingMapRect = MKMapRectMake(center.x - midWidth, center.y - midWidth, width, width);
@@ -42,6 +42,11 @@
     _coordinate = MKCoordinateForMapPoint(MKMapPointMake(MKMapRectGetMidX(_boundingMapRect), MKMapRectGetMidY(_boundingMapRect)));
     
     return self;
+}
+
+- (BOOL)intersectsMapRect:(MKMapRect)mapRect
+{
+    return CGRectIntersectsRect([self boundingMapRect], mapRect);
 }
 
 @end

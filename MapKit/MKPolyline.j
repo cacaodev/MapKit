@@ -57,6 +57,19 @@
     return _boundingMapRect;
 }
 
+- (BOOL)intersectsMapRect:(MKMapRect)mapRect
+{
+    return CGRectIntersectsRect([self boundingMapRect], mapRect);
+}
+
+- (CLLocationCoordinate2D)coordinate
+{
+    var mapRect = [self boundingMapRect],
+        point = MKMapPointMake(MKMapRectGetMinX(mapRect), MKMapRectGetMidY(mapRect));
+    
+    return MKCoordinateForMapPoint(point);
+}
+
 @end
 
 var _MKMapRectForPoints = function(points, pointCount)
