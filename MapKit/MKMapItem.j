@@ -1,3 +1,6 @@
+
+var mapItemForCurrentLocation = nil;
+
 @implementation MKMapItem : CPObject
 {
     MKPlacemark   _placemark           @accessors(getter=placemark);
@@ -9,7 +12,10 @@
 
 + (MKMapItem)mapItemForCurrentLocation
 {
-    return [[MKMapItem alloc] initWithCurrentLocation];
+    if (!mapItemForCurrentLocation)
+        mapItemForCurrentLocation = [[MKMapItem alloc] initWithCurrentLocation];
+        
+    return mapItemForCurrentLocation;
 }
 
 - (id)initWithCurrentLocation
@@ -47,7 +53,7 @@
 - (CLLocationCoordinate2D)_coordinate
 {
     if (_isCurrentLocation)
-        return CLLocationCoordinate2DMake(-1,-1); // TODO: user location
+        return CLLocationCoordinate2DMake(-1,-1);
 
     return [_placemark coordinate];
 }

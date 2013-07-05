@@ -46,4 +46,5 @@
 @import "MKCircleRenderer.j"
 @import "MKRoute.j"
 @import "MKRouteStep.j"
+@import "MKUserLocation.j"
 @import "MKTypes.j"

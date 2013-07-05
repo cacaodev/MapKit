@@ -23,8 +23,8 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <customView id="460" customClass="MKMapView">
-                        <rect key="frame" x="19.999974038020824" y="65.000002166443636" width="444" height="364"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" widthSizable="YES" flexibleMinY="YES" heightSizable="YES"/>
+                        <rect key="frame" x="20" y="65" width="444" height="364"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES" heightSizable="YES"/>
                         <connections>
                             <outlet property="delegate" destination="450" id="498"/>
                         </connections>
@@ -289,6 +289,14 @@
                             <font key="font" metaFont="system"/>
                         </buttonCell>
                     </button>
+                    <button id="dgG-ib-WZK">
+                        <rect key="frame" x="527" y="399" width="145" height="18"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="check" title="Show User Location" bezelStyle="regularSquare" imagePosition="left" inset="2" id="zd1-GG-bfc">
+                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                    </button>
                 </subviews>
             </view>
             <connections>
@@ -304,6 +312,7 @@
                 <action selector="selectAnnotation:" destination="yUw-tm-GJg" id="Hn7-hD-vFM"/>
                 <action selector="setMapType:" destination="539" id="541"/>
                 <action selector="showAnnotations:" destination="481" id="497"/>
+                <action selector="showUserLocation:" destination="dgG-ib-WZK" id="WQc-O6-jzF"/>
                 <outlet property="mapView" destination="460" id="461"/>
                 <outlet property="tableView" destination="500" id="526"/>
                 <outlet property="theWindow" destination="371" id="459"/>
@@ -335,8 +344,21 @@
         <class className="AppController" superclassName="NSObject">
             <source key="sourceIdentifier" type="project" relativePath="./Classes/AppController.h"/>
             <relationships>
+                <relationship kind="action" name="addOverlay:"/>
+                <relationship kind="action" name="directions:"/>
+                <relationship kind="action" name="geocode:"/>
+                <relationship kind="action" name="removeOverlays:"/>
+                <relationship kind="action" name="selectAnnotation:"/>
+                <relationship kind="action" name="setMapType:"/>
+                <relationship kind="action" name="showAnnotations:"/>
+                <relationship kind="action" name="showUserLocation:"/>
                 <relationship kind="outlet" name="mapView" candidateClass="MKMapView"/>
+                <relationship kind="outlet" name="tableView" candidateClass="NSTableView"/>
+                <relationship kind="outlet" name="theWindow" candidateClass="NSWindow"/>
             </relationships>
+        </class>
+        <class className="ArrayController" superclassName="NSArrayController">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/ArrayController.h"/>
         </class>
     </classes>
 </document>

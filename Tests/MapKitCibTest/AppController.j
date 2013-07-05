@@ -60,6 +60,9 @@ CPLogRegister(CPLogConsole);
         }
             
         [mapView addAnnotation:annotation];
+        
+        if ([annotation isKindOfClass:[MKUserLocation class]])
+            return;
 
         var geocoder = [[MKGeocoder alloc] init];
         [geocoder reverseGeocodeLocation:location completionHandler:function (placemarks, error)
@@ -227,6 +230,11 @@ CPLogRegister(CPLogConsole);
     [mapView setSelectedAnnotations:anns];
 }
 
+- (IBAction)showUserLocation:(id)sender
+{
+    [mapView setShowsUserLocation:[sender state]];
+}
+
 // Accessors
 - (void)insertObject:(id)anObject inAnnotationsAtIndex:(CPInteger)anIndex
 {
@@ -262,13 +270,49 @@ CPLogRegister(CPLogConsole);
 // Delegate methods
 - (void)mapViewDidFinishLoadingMap:(MKMapView)aMapView
 {
-    CPLog.debug(_cmd + aMapView);
+    CPLog.debug(_cmd + aMapView + [aMapView delegate]);
     //[mapView setVisibleMapRect:MKMapRectMake(135848897.4, 92271183.5, 235520.1, 146944.0)];
 }
 
 - (void)mapViewDidFinishRenderingMap:(MKMapView)aMapView fullyRendered:(BOOL)flag
 {
     //CPLog.debug(_cmd + aMapView);
+}
+
+- (void)mapView:(MKMapView)aMapView regionDidChangeAnimated:(BOOL)animated
+{
+    //CPLog.debug(_cmd + aMapView);
+}
+
+- (void)mapViewWillStartLocatingUser:(MKMapView)aMapView
+{
+    CPLog.debug(_cmd + aMapView);
+    
+    var userLocation = [aMapView userLocation];
+    
+    var circle = [MKCircle circleWithCenterCoordinate:[userLocation coordinate] radius:[userLocation _accuracy]];
+    [circle setTitle:"circle"];
+    [mapView addOverlay:circle];
+    
+    [self insertObject:userLocation inAnnotationsAtIndex:[annotations count]];
+}
+
+- (void)mapViewDidStopLocatingUser:(MKMapView)aMapView
+{
+    CPLog.debug(_cmd + aMapView);
+    
+    var idx = [annotations indexOfObjectPassingTest:function(obj)
+    {
+        return [obj isKindOfClass:[MKUserLocation class]]; 
+    }];
+    
+    if (idx !== CPNotFound)
+        [self removeObjectFromAnnotationsAtIndex:idx];
+}
+
+- (void)mapView:(MKMapView)aMapView didFailToLocateUserWithError:(CPError)anError
+{
+    CPLog.debug(_cmd + anError);
 }
 
 - (void)mapView:(MKMapView)aMapView regionDidChangeAnimated:(BOOL)animated
@@ -298,10 +342,10 @@ CPLogRegister(CPLogConsole);
     else if (title == @"circle")
     {
         renderer = [[MKCircleRenderer alloc] initWithCircle:anOverlay];
-        [renderer setFillColor:[CPColor blueColor]];
+        [renderer setFillColor:[CPColor redColor]];
 
-        [renderer setStrokeColor:[CPColor redColor]];
-        [renderer setLineWidth:2];
+        [renderer setStrokeColor:[CPColor whiteColor]];
+        [renderer setLineWidth:4];
     }
     
     return renderer;

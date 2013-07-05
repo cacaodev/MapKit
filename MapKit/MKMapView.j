@@ -35,6 +35,7 @@
 @class MKAnnotation;
 @class MKOverlay;
 @class MKPinAnnotationView;
+@class MKUserLocation;
 
 @global google;
 
@@ -54,7 +55,10 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     delegate_mapViewWillStartLoadingMap         = 1 << 10,
     delegate_mapViewDidFinishLoadingMap         = 1 << 11,
     delegate_mapViewWillStartRenderingMap       = 1 << 12,
-    delegate_mapViewDidFinishRenderingMap_fullyRendered = 1 << 13;
+    delegate_mapViewWillStartLocatingUser       = 1 << 13,
+    delegate_mapViewDidStopLocatingUser         = 1 << 14,
+    delegate_mapView_didFailToLocateUserWithError = 1 << 15,
+    delegate_mapViewDidFinishRenderingMap_fullyRendered = 1 << 16;
 
 @implementation MKMapView : CPView
 {
@@ -65,7 +69,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     BOOL                    _scrollEnabled;
     BOOL                    _showsZoomControls;
     BOOL                    _delegateDidSendFinishLoading;
-
+    BOOL                    _showsUserLocation @accessors(getter=showsUserLocation);
     // Tracking
     //BOOL                    _previousTrackingLocation;
 
@@ -81,6 +85,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
     MapOptions              _options @accessors(property=options);
 
+    MKUserLocation          _userLocation @accessors(getter=userLocation);
     Object                  _annotationsQuadTree;
     Object                  _overlaysQuadTree;
     Object                  _ViewForAnnotation;
@@ -156,6 +161,8 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     _MKMapViewDelegateMethods = 0;
     _ViewForAnnotation = {};
     _RendererForOverlay = {};
+    _showsUserLocation = NO;
+    _userLocation = nil;
 }
 
 - (id)loadGoogleAPI
@@ -286,6 +293,15 @@ CPLog.debug(_cmd);
 
     if ([aDelegate respondsToSelector:@selector(mapViewDidFinishRenderingMap:fullyRendered:)])
         _MKMapViewDelegateMethods |= delegate_mapViewDidFinishRenderingMap_fullyRendered;
+
+    if ([aDelegate respondsToSelector:@selector(mapViewWillStartLocatingUser:)])
+        _MKMapViewDelegateMethods |= delegate_mapViewWillStartLocatingUser;
+
+    if ([aDelegate respondsToSelector:@selector(mapViewDidStopLocatingUser:)])
+        _MKMapViewDelegateMethods |= delegate_mapViewDidStopLocatingUser;
+
+    if ([aDelegate respondsToSelector:@selector(mapView:didFailToLocateUserWithError:)])
+        _MKMapViewDelegateMethods |= delegate_mapView_didFailToLocateUserWithError;
 
     delegate = aDelegate;
 }
@@ -807,6 +823,77 @@ CPLog.debug(_cmd);
         [renderer _drawMapRect:mapRect zoomScale:zoomScale inMap:self];
 }
 
+// User location
+// TODO: track user location. Is it useful on a non-mobile device ?
+- (void)setShowsUserLocation:(BOOL)show
+{
+    if (show === _showsUserLocation)
+        return;
+
+    var geolocation = window.navigator.geolocation;
+        
+    if (!geolocation)
+    {
+        if (_MKMapViewDelegateMethods & delegate_mapView_didFailToLocateUserWithError)
+        {
+            var error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:4 userInfo:@{CPLocalizedDescriptionKey:"This browser does not support geolocation"}];
+            [delegate mapView:self didFailToLocateUserWithError:error];
+        }
+    }
+    else if (!show)
+    {
+        _showsUserLocation = NO;
+        _userLocation = nil;
+            
+        if (_MKMapViewDelegateMethods & delegate_mapViewDidStopLocatingUser)
+            [delegate mapViewDidStopLocatingUser:self];
+    }
+    else
+    {
+        _userLocation = [[MKUserLocation alloc] init];
+        [_userLocation _setUpdating:YES];
+        
+        geolocation.getCurrentPosition(function(aGeoLocation)
+        {
+            var coords = aGeoLocation.coords,
+                location = CLLocationCoordinate2DMake(coords.latitude, coords.longitude);
+            
+            [_userLocation _setLocation:location];
+            [_userLocation _setAccuracy:coords.accuracy];
+            [_userLocation _setHeading:coords.heading];
+            [_userLocation setTitle:@"User Location"];
+            [_userLocation setSubtitle:CPStringFromCLLocationCoordinate2D(location)];
+            [_userLocation _setUpdating:NO];
+                        
+            _showsUserLocation = YES; 
+                        
+            if (_MKMapViewDelegateMethods & delegate_mapViewWillStartLocatingUser)
+                [delegate mapViewWillStartLocatingUser:self];
+
+        }, function(err)
+        {
+            _userLocation = nil;
+            _showsUserLocation = NO;
+            
+            if (_MKMapViewDelegateMethods & delegate_mapView_didFailToLocateUserWithError)
+            {
+                var error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:err.code userInfo:@{CPLocalizedDescriptionKey:err.message}];
+                [delegate mapView:self didFailToLocateUserWithError:error];
+            }
+        });
+    }
+}
+
+- (BOOL)isUserLocationVisible
+{
+    if (!_userLocation)
+        return NO;
+
+    // TODO: Handle the accuracy around the point
+    return MKMapRectContainsPoint([self visibleMapRect], MKMapPointForCoordinate([_userLocation location]));
+}
+
+// Pixel / coordinate conversions
 - (CLLocationCoordinate2D)convertPoint:(CGPoint)point toCoordinateFromView:(CPView)view
 {
     var mapRect = [self visibleMapRect],
@@ -846,7 +933,6 @@ CPLog.debug(_cmd);
     return MKCoordinateRegionForMapRect(newMapRect);
 }
 
-
 - (CGRect)convertRegion:(MKCoordinateRegion)region toRectToView:(CPView)view
 {
     var mapRect = MKMapRectForCoordinateRegion(region);
@@ -866,6 +952,7 @@ CPLog.debug(_cmd);
 
 - (void)layoutSubviews
 {
+// TODO: send a bounds_changed event ?
     if (_map)
 	   google.maps.event.trigger(_map, 'resize');
 }
