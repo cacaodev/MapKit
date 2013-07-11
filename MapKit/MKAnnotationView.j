@@ -5,11 +5,11 @@
 
 @implementation MKAnnotationView : CPView
 {
-	BOOL        enabled         @accessors(getter=isEnabled);
-	BOOL        highlighted     @accessors(getter=isHighlighted);
-	BOOL        selected        @accessors(getter=isSelected);
+	BOOL        enabled         @accessors(readonly, getter=isEnabled);
+	BOOL        highlighted     @accessors(readonly, getter=isHighlighted);
+	BOOL        selected        @accessors(readonly, getter=isSelected);
 	BOOL        canShowCallout  @accessors;
-	BOOL        draggable       @accessors(getter=isDraggable);
+	BOOL        draggable       @accessors(readonly, getter=isDraggable);
 
 	CPImage     _image                    @accessors(property=image);
 	CPView      leftCalloutAccessoryView  @accessors;
@@ -18,7 +18,7 @@
 	CPPoint     calloutOffset             @accessors;
 	CPPoint     centerOffset              @accessors;
 
-	id          annotation                @accessors;
+	id          annotation                @accessors(readonly);
 	Object      _marker;
 	Object      _overlay;
 	Object      _infoWindow;
@@ -42,7 +42,7 @@
         this.domElement.parentNode.removeChild(this.domElement);
         this.domElement = null;
     };
-    
+
     GMOverlay.prototype.draw = function()
     {
         console.log("draw" + this.toString());
@@ -169,13 +169,13 @@
 {
     _marker.setMap(null);
     _marker = nil;
-    
+
     if (_overlay)
     {
         _overlay.onRemove();
         _overlay = nil;
     }
-    
+
     if (_infoWindow)
     {
         _infoWindow.close();

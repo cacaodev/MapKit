@@ -3,10 +3,6 @@
 @global google;
 @global MKDirectionsTransportType;
 
-MKDirectionsTransportTypeAutomobile = 0;
-MKDirectionsTransportTypeWalking    = 1;
-MKDirectionsTransportTypeAny        = 2;
-
 var GOOGLE_TRAVEL_MODES = nil;
 
 @implementation MKDirectionsRequest : CPObject

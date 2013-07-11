@@ -3,8 +3,8 @@ var mapItemForCurrentLocation = nil;
 
 @implementation MKMapItem : CPObject
 {
-    MKPlacemark   _placemark           @accessors(getter=placemark);
-    BOOL          _isCurrentLocation   @accessors(getter=isCurrentLocation);
+    MKPlacemark   _placemark           @accessors(readonly, getter=placemark);
+    BOOL          _isCurrentLocation   @accessors(readonly, getter=isCurrentLocation);
     CPString      _name                @accessors(property=name);
     CPString      _phoneNumber         @accessors(property=phoneNumber);
     CPURL         _url                 @accessors(property=url);
@@ -14,7 +14,7 @@ var mapItemForCurrentLocation = nil;
 {
     if (!mapItemForCurrentLocation)
         mapItemForCurrentLocation = [[MKMapItem alloc] initWithCurrentLocation];
-        
+
     return mapItemForCurrentLocation;
 }
 

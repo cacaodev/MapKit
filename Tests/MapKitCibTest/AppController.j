@@ -9,6 +9,8 @@
 CPLogRegister(CPLogConsole);
 
 @import <Foundation/CPObject.j>
+@import <AppKit/CPArrayController.j>
+
 @import "MapKit/MapKit.j"
 
 @implementation ArrayController : CPArrayController
@@ -102,6 +104,11 @@ CPLogRegister(CPLogConsole);
 // change state
 }
 
+- (CPArray)selectedAnnotations
+{
+    return [annotations objectsAtIndexes:[tableView selectedRowIndexes]];
+}
+
 - (void)findDirectionsFrom:(MKMapItem)source to:(MKMapItem)destination
 {
     var request = [[MKDirectionsRequest alloc] init];
@@ -184,16 +191,16 @@ CPLogRegister(CPLogConsole);
 
 - (IBAction)directions:(id)sender
 {
-    if ([annotations count] < 2)
+    var selection = [self selectedAnnotations];
+    
+    if ([selection count] < 2)
         return;
 
     var p = [[MKPlacemark alloc] init];
-    [p setLocation:[[annotations firstObject] coordinate]];
+    [p setLocation:[[selection firstObject] coordinate]];
 
     var pp = [[MKPlacemark alloc] init];
-    [pp setLocation:[[annotations lastObject] coordinate]];
-
-    [mapView addAnnotations:[p, pp]];
+    [pp setLocation:[[selection lastObject] coordinate]];
 
     var start = [[MKMapItem alloc] initWithPlacemark:p],
         end = [[MKMapItem alloc] initWithPlacemark:pp];
@@ -203,14 +210,14 @@ CPLogRegister(CPLogConsole);
 
 - (IBAction)addOverlay:(id)sender
 {
-    if ([annotations count] < 2)
+    var selection = [self selectedAnnotations];
+    
+    if ([selection count] < 2)
         return;
    
-    var coordinates = [];
-    [annotations enumerateObjectsUsingBlock:function(ann, idx, stop)
-    {
-        coordinates.push([ann coordinate]);    
-    }];
+    var c1 = [[selection firstObject] coordinate],
+        c2 = [[selection lastObject] coordinate],
+        coordinates = [c1, c2];
 
     var polyline = [MKPolyline polylineWithCoordinates:coordinates count:coordinates.length];
     [polyline setTitle:"direct"];

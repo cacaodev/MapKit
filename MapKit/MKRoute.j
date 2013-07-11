@@ -2,14 +2,14 @@
 
 @implementation MKRoute : CPObject
 {
-    CPArray                     _advisoryNotices    @accessors(getter=advisoryNotices);
-    CPTimeInterval              _expectedTravelTime @accessors(getter=expectedTravelTime);
-    CPString                    _name               @accessors(getter=name);
-    CPArray                     _steps              @accessors(getter=steps);
+    CPArray                     _advisoryNotices    @accessors(readonly, getter=advisoryNotices);
+    CPTimeInterval              _expectedTravelTime @accessors(readonly, getter=expectedTravelTime);
+    CPString                    _name               @accessors(readonly, getter=name);
+    CPArray                     _steps              @accessors(readonly, getter=steps);
 
-    MKDirectionsTransportType   _transportType      @accessors(getter=transportType);
-    CLLocationDistance          _distance           @accessors(getter=distance);
-    MKPolyline                  _polyline           @accessors(getter=polyline);
+    MKDirectionsTransportType   _transportType      @accessors(readonly, getter=transportType);
+    CLLocationDistance          _distance           @accessors(readonly, getter=distance);
+    MKPolyline                  _polyline           @accessors(readonly, getter=polyline);
 }
 
 - (id)initWithJSON:(Object)aJSON

@@ -6,7 +6,7 @@
 
 @implementation MKDirections : CPObject
 {
-    BOOL _calculating @accessors(getter=isCalculating);
+    BOOL _calculating @accessors(readonly, getter=isCalculating);
     MKDirectionsRequest _request;
 }
 

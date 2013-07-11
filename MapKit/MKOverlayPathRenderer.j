@@ -55,6 +55,7 @@
 - (void)invalidatePath
 {
     _path = nil;
+    CPLog.debug(_cmd);
     //[self setNeedsDisplay];
 }
 

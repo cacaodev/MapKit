@@ -29,3 +29,7 @@ MKMapTypeStandard           = 0;
 MKMapTypeHybrid             = 1;
 MKMapTypeSatellite          = 2;
 MKMapTypeTerrain            = 3;
+
+MKDirectionsTransportTypeAutomobile = 0;
+MKDirectionsTransportTypeWalking    = 1;
+MKDirectionsTransportTypeAny        = 2;

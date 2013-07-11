@@ -43,7 +43,7 @@
     _geocoder = new google.maps.Geocoder();
 }
 
-- (void)geocodeAddressString:(CPString)anAddress inRegion:(id/*MKCoordinateRegion*/)region completionHandler:(Function /*(placemarks, error)*/)completionHandler
+- (void)geocodeAddressString:(CPString)anAddress inRegion:(MKCoordinateRegion)region completionHandler:(Function /*(placemarks, error)*/)completionHandler
 {
     var request = {address:anAddress};
     if (region)
@@ -55,7 +55,7 @@
     [self geocodeWithRequest:request completionHandler:completionHandler];
 }
 
-- (void)reverseGeocodeLocation:(id/*CLLocationCoordinate2D*/)location completionHandler:(Function /*(placemarks, error)*/)completionHandler
+- (void)reverseGeocodeLocation:(CLLocationCoordinate2D)location completionHandler:(Function /*(placemarks, error)*/)completionHandler
 {
     var latLng = LatLngFromCLLocationCoordinate2D(location);
     [self geocodeWithRequest:{latLng:latLng} completionHandler:completionHandler];
@@ -94,7 +94,7 @@
         }
         else
         {
-            error = status;
+            error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:-1 userInfo:@{CPLocalizedDescriptionKey:status}];
             placemarks = nil;
         }
 

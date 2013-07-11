@@ -1,10 +1,10 @@
 @implementation MKRouteStep : CPObject
 {
-    CLLocationDistance          _distance       @accessors(getter=distance);
-    CPString                    _instructions   @accessors(getter=instructions);
-    CPString                    _notice         @accessors(getter=notice);
-    MKPolyline                  _polyline       @accessors(getter=polyline);
-    MKDirectionsTransportType   _transportType  @accessors(getter=transportType);
+    CLLocationDistance          _distance       @accessors(readonly, getter=distance);
+    CPString                    _instructions   @accessors(readonly, getter=instructions);
+    CPString                    _notice         @accessors(readonly, getter=notice);
+    MKPolyline                  _polyline       @accessors(readonly, getter=polyline);
+    MKDirectionsTransportType   _transportType  @accessors(readonly, getter=transportType);
 }
 
 - (id)initWithJSON:(Object)aJSON
@@ -14,6 +14,7 @@
     _instructions = stripHTML(aJSON.instructions);
     _distance = aJSON.distance ? aJSON.distance.value : 0;
     _polyline = [[MKPolyline alloc] init];
+    [_polyline _setSmooth:YES];
     _transportType = TransportTypeForTravelMode(aJSON.travel_mode);
     _notice = nil;
 
@@ -26,7 +27,7 @@
             point = MKMapPointForCoordinate(coordinate);
 
         [_polyline _addPoint:point];
-        
+
         console.log(i + ": " + point + " " + latLng);
     }
 

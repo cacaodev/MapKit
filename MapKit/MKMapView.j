@@ -26,11 +26,12 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 @import <AppKit/CPView.j>
+@import <Foundation/CPError.j>
 
 @import "MKGeometry.j"
 @import "MKTypes.j"
 @import "ScriptLoader.j"
-@import "quadtree.js"
+@import "QuadTree.js"
 
 @class MKAnnotation;
 @class MKOverlay;
@@ -62,32 +63,33 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 @implementation MKMapView : CPView
 {
-    @outlet                 id delegate @accessors(getter=delegate);
+    @outlet                 id delegate @accessors;
 
     MKMapType               _mapType;
     MKCoordinateRegion      _region;
     BOOL                    _scrollEnabled;
     BOOL                    _showsZoomControls;
     BOOL                    _delegateDidSendFinishLoading;
-    BOOL                    _showsUserLocation @accessors(getter=showsUserLocation);
+    BOOL                    _showsUserLocation @accessors(readonly, getter=showsUserLocation);
     // Tracking
     //BOOL                    _previousTrackingLocation;
 
    	DOMElement              _DOMMapElement;
 	Object                  _map;
 
-    CPArray                 _annotations @accessors(getter=annotations);
-    CPArray                 _selectedAnnotations @accessors(getter=selectedAnnotations);
+    CPArray                 _annotations;
+    CPArray                 _selectedAnnotations @accessors(readonly, getter=selectedAnnotations);
     CPDictionary            _reusableAnnotationViews;
-    CPArray                 _overlays @accessors(getter=overlays);
+    CPArray                 _overlays;
+    CPArray                 _visibleOverlays;
 
     unsigned int            _MKMapViewDelegateMethods;
 
     MapOptions              _options @accessors(property=options);
 
-    MKUserLocation          _userLocation @accessors(getter=userLocation);
+    MKUserLocation          _userLocation @accessors(readonly, getter=userLocation);
     Object                  _annotationsQuadTree;
-    Object                  _overlaysQuadTree;
+//  Object                  _overlaysQuadTree;
     Object                  _ViewForAnnotation;
     Object                  _RendererForOverlay;
 }
@@ -154,6 +156,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     _selectedAnnotations = [];
     _reusableAnnotationViews = @{};
     _overlays = [];
+    _visibleOverlays = [];
     _delegateDidSendFinishLoading = NO;
     _options = [[MapOptions alloc] init];
     _annotationsQuadTree = nil;
@@ -204,7 +207,7 @@ CPLog.debug(_cmd);
 
     _DOMMapElement = contentView._DOMElement;
     _map = new google.maps.Map(_DOMMapElement, options);
-    
+
     [_options setMapObject:_map];
 
     [self _sendDidFinishLoadingNotificationIfNeeded];
@@ -220,8 +223,6 @@ CPLog.debug(_cmd);
 
         if (_MKMapViewDelegateMethods & delegate_mapView_regionDidChangeAnimated)
             [delegate mapView:self regionDidChangeAnimated:NO];
-            
-        [self drawVisibleOverlays];
     });
 
     event.addListener(_map, "maptypeid_changed", function()
@@ -285,12 +286,14 @@ CPLog.debug(_cmd);
     if ([aDelegate respondsToSelector:@selector(mapViewWillStartLoadingMap:)])
         _MKMapViewDelegateMethods |= delegate_mapViewWillStartLoadingMap;
 
+// TODO: In OSX MapKit this is called every time tiles are loaded ?!!
     if ([aDelegate respondsToSelector:@selector(mapViewDidFinishLoadingMap:)])
         _MKMapViewDelegateMethods |= delegate_mapViewDidFinishLoadingMap;
 
     if ([aDelegate respondsToSelector:@selector(mapViewWillStartRenderingMap:)])
         _MKMapViewDelegateMethods |= delegate_mapViewWillStartRenderingMap;
 
+// TODO: fullyrendered parameter ?
     if ([aDelegate respondsToSelector:@selector(mapViewDidFinishRenderingMap:fullyRendered:)])
         _MKMapViewDelegateMethods |= delegate_mapViewDidFinishRenderingMap_fullyRendered;
 
@@ -326,7 +329,7 @@ CPLog.debug(_cmd);
     if (_map)
         [self _setRegion:aRegion];
     else
-    {        
+    {
         var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
         [invocation setTarget:self];
         [invocation setSelector:@selector(_setRegion:)];
@@ -352,7 +355,7 @@ CPLog.debug(_cmd);
     if (_map)
         [self _setVisibleMapRect:aMapRect];
     else
-    {        
+    {
         var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
         [invocation setTarget:self];
         [invocation setSelector:@selector(_setVisibleMapRect:)];
@@ -378,7 +381,7 @@ CPLog.debug(_cmd);
     if (_map)
         [self _setCenterCoordinate:aCoordinate];
     else
-    {        
+    {
         var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
         [invocation setTarget:self];
         [invocation setSelector:@selector(_setCenterCoordinate:)];
@@ -414,7 +417,7 @@ CPLog.debug(_cmd);
     if (_map)
         [self _setMapType:aMapType];
     else
-    {        
+    {
         var invocation = [[CPInvocation alloc] initWithMethodSignature:nil];
         [invocation setTarget:self];
         [invocation setSelector:@selector(_setMapType:)];
@@ -496,6 +499,11 @@ CPLog.debug(_cmd);
 /*
     Annotating the Map
 */
+- (CPArray)annotations
+{
+    return [CPArray arrayWithArray:_annotations];
+}
+
 - (void)addAnnotation:(id <MKAnnotation>)annotation
 {
 	[self addAnnotations:[CPArray arrayWithObject:annotation]];
@@ -528,12 +536,12 @@ CPLog.debug(_cmd);
 
         [annotationView _updateMarkerAndOverlayForMap:_map];
 		_ViewForAnnotation[[annotation UID]] = annotationView;
-		
+
 		[_annotations addObject:annotation];
 	}
 
     if (!_annotationsQuadTree)
-        _annotationsQuadTree = QUAD.init({x:0, y:0, w:MKWORLD_SIZE, h:MKWORLD_SIZE});
+        _annotationsQuadTree = new QuadTree(MKMapRectWorld(), true);
 
     [self addAnnotationsToQuadTree:aAnnotationArray];
 }
@@ -575,7 +583,7 @@ CPLog.debug(_cmd);
 
         [_annotations removeObjectIdenticalTo:annotation];
     }
-    
+
     _annotationsQuadTree.clear();
     [self addAnnotationsToQuadTree:_annotations];
 }
@@ -607,11 +615,15 @@ CPLog.debug(_cmd);
         size = mapRect.size,
         quad_rect = {x:origin.x, y:origin.y, w:size.width, h:size.height};
 
-    _annotationsQuadTree.retrieve(quad_rect, function(item)
-    {
-        if (MKMapRectContainsPoint(mapRect, item))
-            [result addObject:item.annotation];
-    });
+    var overlappingNodes = _annotationsQuadTree.retrieve(quad_rect);
+    
+    [overlappingNodes enumerateObjectsUsingBlock:function(aNode, idx, stop)
+    {        
+        var p = MKMapPointMake(aNode.x, aNode.y);
+    
+        if (MKMapRectContainsPoint(mapRect, p))
+            [result addObject:aNode.annotation];
+    }];    
 
     return result;
 }
@@ -699,6 +711,12 @@ CPLog.debug(_cmd);
 }
 
 // Overlays;
+
+- (CPArray)overlays
+{
+    return [CPArray arrayWithArray:_overlays];
+}
+
 - (void)addOverlay:(id)anOverlay
 {
     [self addOverlays:[CPArray arrayWithObject:anOverlay]];
@@ -708,45 +726,19 @@ CPLog.debug(_cmd);
 {
     if (![overlays count])
         return;
-        
-    if (!_overlaysQuadTree)
-        _overlaysQuadTree = QUAD.init({x:0, y:0, w:MKWORLD_SIZE, h:MKWORLD_SIZE});
+
+//    if (!_overlaysQuadTree)
+//        _overlaysQuadTree = new QuadTree(MKMapRectWorld());
 
     [_overlays addObjectsFromArray:overlays];
-    
-    [self addOverlaysToQuadTree:overlays];
-    [self drawVisibleOverlays];
-}
 
-- (void)addAnnotationsToQuadTree:(CPArray)annotations
-{
-    [self insertObjects:annotations inQuadTree:_annotationsQuadTree usingNodeFunction:function(anAnnotation)
+    //[self addOverlaysToQuadTree:overlays];
+    
+    [overlays enumerateObjectsUsingBlock:function(ov, idx, stop)
     {
-        var point = MKMapPointForCoordinate([anAnnotation coordinate]);
-        return {annotation:anAnnotation, x:point.x, y:point.y};
+        var renderer = [self _rendererForOverlay:ov];
+        [renderer _addToMap:self];        
     }];
-}
-
-- (void)addOverlaysToQuadTree:(CPArray)overlays
-{
-    [self insertObjects:overlays inQuadTree:_overlaysQuadTree usingNodeFunction:function(anOverlay)
-    {
-        var boundingMapRect = [anOverlay boundingMapRect];
-        return {overlay:anOverlay, x:MKMapRectGetMinX(boundingMapRect), y:MKMapRectGetMinY(boundingMapRect), w:MKMapRectGetWidth(boundingMapRect), h:MKMapRectGetHeight(boundingMapRect)};
-    }];
-}
-
-- (void)insertObjects:(CPArray)objects inQuadTree:(Object)aQuadTree usingNodeFunction:(Function/*object*/)aFunction
-{
-    var quad_nodes = [];
-    
-    [objects enumerateObjectsUsingBlock:function(object, idx, stop)
-    {                    
-        var node = aFunction(object);
-        quad_nodes.push(node);
-    }];
-    
-    aQuadTree.insert(quad_nodes);
 }
 
 - (void)removeOverlay:(id)anOverlay
@@ -759,70 +751,165 @@ CPLog.debug(_cmd);
     if (![overlays count])
         return;
         
-    [overlays enumerateObjectsUsingBlock:function(anOverlay, idx, stop)
+    [overlays enumerateObjectsUsingBlock:function(ov, idx, stop)
     {
-        var uuid = [anOverlay UID],
-            renderer = _RendererForOverlay[uuid];
-        
-        if (renderer)
-        {
-            [renderer _remove];
-            delete(_RendererForOverlay[uuid]);
-        }
+        var renderer = [self _rendererForOverlay:ov];
+        [renderer _remove];        
     }];
-    
+
     [_overlays removeObjectsInArray:overlays];
-    
+/*
     _overlaysQuadTree.clear();
     [self addOverlaysToQuadTree:_overlays];
+
+    [self _updateOverlays];
+*/
 }
 
 - (id)_rendererForOverlay:(id)anOverlay
 {
     var uuid = [anOverlay UID],
         renderer = _RendererForOverlay[uuid];
-    
+
     if (!renderer && (_MKMapViewDelegateMethods & delegate_mapView_rendererForOverlay))
     {
         renderer = [delegate mapView:self rendererForOverlay:anOverlay];
         _RendererForOverlay[uuid] = renderer;
     }
 
-    return renderer;  
+    return renderer;
 }
 
-- (void)drawVisibleOverlays
+// QUADTREE SUPPORT
+
+- (void)addAnnotationsToQuadTree:(CPArray)annotations
 {
+    [annotations enumerateObjectsUsingBlock:function(anAnnotation, idx, stop)
+    {
+        var point = MKMapPointForCoordinate([anAnnotation coordinate]),
+            node = {annotation:anAnnotation, x:point.x, y:point.y};
+        
+        _annotationsQuadTree.insert(node);
+    }];
+}
+/*
+- (void)addOverlaysToQuadTree:(CPArray)overlays
+{
+    [self insertObjects:overlays inQuadTree:_overlaysQuadTree usingNodeFunction:function(anOverlay)
+    {
+        var boundingMapRect = [anOverlay boundingMapRect];
+        
+        return {overlay:anOverlay,
+                      x:MKMapRectGetMinX(boundingMapRect),
+                      y:MKMapRectGetMinY(boundingMapRect),
+                      width:MKMapRectGetWidth(boundingMapRect),
+                      height:MKMapRectGetHeight(boundingMapRect)};
+    }];
+}
+
+- (void)insertObjects:(CPArray)objects inQuadTree:(Object)aQuadTree usingNodeFunction:(Function)aFunction
+{
+    var quad_nodes = [];
+
+    [objects enumerateObjectsUsingBlock:function(object, idx, stop)
+    {
+        var node = aFunction(object);
+        quad_nodes.push(node);
+    }];
+
+    aQuadTree.insert(quad_nodes);
+}
+
+- (void)_updateOverlays
+{
+    return;
+
     if (!_overlaysQuadTree)
         return;
 
-    var visibleMapRect = [self visibleMapRect];
-    
-    _overlaysQuadTree.retrieve(visibleMapRect, function(item)
-    {            
-        var mapRect = MKMapRectMake(item.x, item.y, item.w, item.h);
-        if (CGRectIntersectsRect(mapRect, visibleMapRect))
-        {
-            var overlay = item.overlay;
+    var toRemove           = [CPArray arrayWithArray:_visibleOverlays],
+        toAdd              = [CPArray array],
+        unchanged          = [CPArray array],
+        newVisibleOverlays = [CPArray array],
+
+        visibleMapRect = [self visibleMapRect];
+
+    [self enumerateItemsInMapRect:visibleMapRect usingBlock:function(item)
+    {
+        var overlay = item.overlay,
+            count = [toRemove count],
+            found = NO;
             
-            [self _drawOverlay:overlay inMapRect:visibleMapRect];
+        while (count--)
+        {
+            if (overlay == toRemove[count])
+            {
+                [toRemove removeObjectAtIndex:count];
+                [unchanged addObject:overlay];
+                found = YES;
+                
+                break;
+            }
         }
-    });
+
+        if (found == NO)
+            [toAdd addObject:overlay];
+
+        [newVisibleOverlays addObject:overlay];
+    }];
+        
+    console.log("REMOVE: " + toRemove + " ADD: " + toAdd + " Unchanged: " + unchanged);
+
+    if ([toAdd count])
+    {
+        var zoomScale = [self zoomScale];
+
+        [toAdd enumerateObjectsUsingBlock:function(overlay, idx, stop)
+        {
+            var renderer = [self _rendererForOverlay:overlay];
+
+            if (!renderer)
+                return;
+
+            [renderer _setContentScaleFactor:zoomScale];
+            [renderer _addToMap:self];
+        }];
+    }
+
+    if ([unchanged count])
+    {
+        var mapRect = [self visibleMapRect],
+            zoomScale = [self zoomScale];
+
+        [unchanged enumerateObjectsUsingBlock:function(overlay, idx, stop)
+        {
+            var renderer = [self _rendererForOverlay:overlay];
+            [renderer _setContentScaleFactor:zoomScale];
+        }];
+    }
+
+    [toRemove enumerateObjectsUsingBlock:function(overlay, idx, stop)
+    {
+        var renderer = [self _rendererForOverlay:overlay];
+        [renderer _remove];
+    }];
+
+    _visibleOverlays = newVisibleOverlays;
 }
 
-- (void)_drawOverlay:(id)overlay inMapRect:(MKMapRect)mapRect
+- (void)enumerateItemsInMapRect:(MKMapRect)aMapRect usingBlock:(Function)aFunction
 {
-    var boundingMapRect = [overlay boundingMapRect];
-
-    var renderer = [self _rendererForOverlay:overlay],
-        zoomScale = [self zoomScale];
+    var overlappingItems = _overlaysQuadTree.retrieve(aMapRect);
     
-    [renderer _setContentScaleFactor:zoomScale];
+    [overlappingItems enumerateObjectsUsingBlock:function(item, idx, stop)
+    {        
+        var itemMapRect = MKMapRectMake(item.x, item.y, item.width, item.height);
     
-    if ([renderer canDrawMapRect:mapRect zoomScale:zoomScale])
-        [renderer _drawMapRect:mapRect zoomScale:zoomScale inMap:self];
+        if (CGRectIntersectsRect(itemMapRect, aMapRect))
+            aFunction(item);
+    }];    
 }
-
+*/
 // User location
 // TODO: track user location. Is it useful on a non-mobile device ?
 - (void)setShowsUserLocation:(BOOL)show
@@ -831,7 +918,7 @@ CPLog.debug(_cmd);
         return;
 
     var geolocation = window.navigator.geolocation;
-        
+
     if (!geolocation)
     {
         if (_MKMapViewDelegateMethods & delegate_mapView_didFailToLocateUserWithError)
@@ -844,7 +931,7 @@ CPLog.debug(_cmd);
     {
         _showsUserLocation = NO;
         _userLocation = nil;
-            
+
         if (_MKMapViewDelegateMethods & delegate_mapViewDidStopLocatingUser)
             [delegate mapViewDidStopLocatingUser:self];
     }
@@ -852,21 +939,21 @@ CPLog.debug(_cmd);
     {
         _userLocation = [[MKUserLocation alloc] init];
         [_userLocation _setUpdating:YES];
-        
+
         geolocation.getCurrentPosition(function(aGeoLocation)
         {
             var coords = aGeoLocation.coords,
                 location = CLLocationCoordinate2DMake(coords.latitude, coords.longitude);
-            
+
             [_userLocation _setLocation:location];
             [_userLocation _setAccuracy:coords.accuracy];
             [_userLocation _setHeading:coords.heading];
             [_userLocation setTitle:@"User Location"];
             [_userLocation setSubtitle:CPStringFromCLLocationCoordinate2D(location)];
             [_userLocation _setUpdating:NO];
-                        
-            _showsUserLocation = YES; 
-                        
+
+            _showsUserLocation = YES;
+
             if (_MKMapViewDelegateMethods & delegate_mapViewWillStartLocatingUser)
                 [delegate mapViewWillStartLocatingUser:self];
 
@@ -874,7 +961,7 @@ CPLog.debug(_cmd);
         {
             _userLocation = nil;
             _showsUserLocation = NO;
-            
+
             if (_MKMapViewDelegateMethods & delegate_mapView_didFailToLocateUserWithError)
             {
                 var error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:err.code userInfo:@{CPLocalizedDescriptionKey:err.message}];
@@ -898,7 +985,7 @@ CPLog.debug(_cmd);
 {
     var mapRect = [self visibleMapRect],
         m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]);
-        
+
     var convertedPoint = [self convertPoint:point fromView:view];
 
     return CLLocationCoordinate2DMake(MKMapRectGetMinX(mapRect) + convertedPoint.x * m, MKMapRectGetMinY(mapRect) + convertedPoint.y * m);
@@ -908,7 +995,7 @@ CPLog.debug(_cmd);
 {
     var mapRect = [self visibleMapRect],
         m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]);
-    
+
     var point = CGPointMake((aMapPoint.x - MKMapRectGetMinX(mapRect)) / m , (aMapPoint.y - MKMapRectGetMinY(mapRect)) / m);
 
     return [self convertPoint:point toView:view];
@@ -925,9 +1012,9 @@ CPLog.debug(_cmd);
 {
     var mapRect = [self visibleMapRect],
         m = MKMapRectGetWidth(mapRect) / CGRectGetWidth([self bounds]);
-    
+
     var convertedRect = [self convertRect:rect fromView:view];
-    
+
     var newMapRect = MKMapRectMake(MKMapRectGetMinX(mapRect) + CGRectGetMinX(convertedRect) * m, MKMapRectGetMinY(mapRect) + CGRectGetMinY(convertedRect) * m, CGRectGetWidth(convertedRect) * m, CGRectGetHeight(convertedRect) * m);
 
     return MKCoordinateRegionForMapRect(newMapRect);
@@ -936,7 +1023,7 @@ CPLog.debug(_cmd);
 - (CGRect)convertRegion:(MKCoordinateRegion)region toRectToView:(CPView)view
 {
     var mapRect = MKMapRectForCoordinateRegion(region);
-    
+
     return [self convertMapRect:mapRect toRectToView:view];
 }
 
@@ -946,7 +1033,7 @@ CPLog.debug(_cmd);
         m = MKMapRectGetWidth(visibleMapRect) / CGRectGetWidth([self bounds]);
 
     var baseRect = CGRectMake((MKMapRectGetMinX(aMapRect) - MKMapRectGetMinX(visibleMapRect)) / m, (MKMapRectGetMinY(aMapRect) - MKMapRectGetMinY(visibleMapRect)) / m, MKMapRectGetWidth(aMapRect) / m, MKMapRectGetHeight(aMapRect) / m);
-    
+
     return [self convertRect:baseRect toView:view];
 }
 

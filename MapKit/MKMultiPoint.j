@@ -2,8 +2,8 @@
 
 @implementation MKMultiPoint : MKShape
 {
-    CPInteger  _pointCount  @accessors(getter=pointCount);
-    CPArray    _points      @accessors(getter=points);
+    CPInteger  _pointCount  @accessors(readonly, getter=pointCount);
+    CPArray    _points      @accessors(readonly, getter=points);
 }
 
 - (void)getCoordinates:(CPArray)coords range:(CPRange)range
@@ -27,12 +27,7 @@
 
 - (CPString)description
 {
-    var s = "";
-
-    for (var i = 0; i < _pointCount; i++)
-        s += _points[i] + ", ";
-
-    return "<" + [self className] + " pointCount:" + _pointCount + ">";
+    return [CPString stringWithFormat:@"< %@ %@ pointCount=%d>", [self className], [self UID], _pointCount];
 }
 
 @end

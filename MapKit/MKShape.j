@@ -2,7 +2,7 @@
 
 @implementation MKShape : CPObject
 {
-    CPString _title @accessors(property=title)
+    CPString _title    @accessors(property=title)
     CPString _subtitle @accessors(property=subtitle)
 }
 
