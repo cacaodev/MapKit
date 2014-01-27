@@ -35,6 +35,7 @@
 
 @class MKOverlay;
 @class MKUserLocation;
+@class MKPinAnnotationView;
 
 @global google;
 

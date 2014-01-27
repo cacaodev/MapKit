@@ -28,7 +28,7 @@
 @import "MKAnnotationView.j"
 @import "MKMapItem.j"
 @import "MKMapView.j"
-@import "MKPinAnnotationview.j"
+@import "MKPinAnnotationView.j"
 @import "MKPlacemark.j"
 @import "MKUserLocation.j"
 @import "MKTypes.j"

@@ -1,8 +1,9 @@
-Yet another cappu MapKit fork totally incompatible with other forks. Sorry for that but I couldn't find a stable v3 based MapKit although there is a lot of good stuff out there but very disparate.
 
-A lot of stuff is borrowed from other forks:
-MKMapView comes mainly from cappuccino/MapKit before v3 support was reverted.
-MKAnnotation and MKPlacemark is from mafis/MapKit + initial binding support for centerCoordinate.
-MKGeocoder is new and mimics iOS 5 class CLGeocoder. Supports both geocoding and reverse geocoding but you need a loaded map first.
+CREDITS:
+MKMapView comes mainly from github.com/cappuccino/MapKit before v3 support was reverted.
+MKAnnotation and MKPlacemark is from github.com/mafis/MapKit + initial binding support for centerCoordinate.
 
 There is a test for a cib-based MapView also testing the geocoding feature.
+
+USAGE: 1/ build the framework 'cd MapKit && jake'
+       2/ In Tests/MapKitCibTest/Frameworks/, symlink the built framework (should be in $CAPP_BUILD/Release/MapKit) along with AppKit and Foundation.

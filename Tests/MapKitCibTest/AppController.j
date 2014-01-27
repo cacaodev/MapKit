@@ -11,7 +11,7 @@ CPLogRegister(CPLogConsole);
 @import <Foundation/CPObject.j>
 @import <AppKit/CPArrayController.j>
 
-@import "MapKit/MapKit.j"
+@import <MapKit/MapKit.j>
 
 @implementation ArrayController : CPArrayController
 {
@@ -54,15 +54,15 @@ CPLogRegister(CPLogConsole);
     {
         var annotation = [[change objectForKey:CPKeyValueChangeNewKey] firstObject],
             location = [annotation coordinate];
-        
+
         if (!location)
         {
             location = [mapView centerCoordinate];
             [annotation setCoordinate:location];
         }
-            
+
         [mapView addAnnotation:annotation];
-        
+
         if ([annotation isKindOfClass:[MKUserLocation class]])
             return;
 
@@ -124,7 +124,7 @@ CPLogRegister(CPLogConsole);
     [directions calculateDirectionsWithCompletionHandler:function(response, error)
     {
         var theSteps = [CPArray array];
-        
+
         if (error == nil)
         {
             CPLog.debug("response " + [response description]);
@@ -136,7 +136,7 @@ CPLogRegister(CPLogConsole);
             [polyline setTitle:"route"];
             [mapView addOverlay:polyline];
         }
-        
+
         [self setSteps:theSteps];
     }];
 }
@@ -147,9 +147,9 @@ CPLogRegister(CPLogConsole);
     {
         var polyline = [aStep polyline],
             start = [[polyline points] firstObject];
-            
+
         var coordinate = MKCoordinateForMapPoint(start);
-            
+
         var circle = [MKCircle circleWithCenterCoordinate:coordinate radius:10];
         [mapView addOverlay:circle];
     }];
@@ -167,7 +167,7 @@ CPLogRegister(CPLogConsole);
         else
         {
             var annotation = placemarks[0];
-            
+
             [self insertObject:annotation inAnnotationsAtIndex:[annotations count]];
             [mapView setCenterCoordinate:[annotation coordinate]];
         }
@@ -192,7 +192,7 @@ CPLogRegister(CPLogConsole);
 - (IBAction)directions:(id)sender
 {
     var selection = [self selectedAnnotations];
-    
+
     if ([selection count] < 2)
         return;
 
@@ -211,10 +211,10 @@ CPLogRegister(CPLogConsole);
 - (IBAction)addOverlay:(id)sender
 {
     var selection = [self selectedAnnotations];
-    
+
     if ([selection count] < 2)
         return;
-   
+
     var c1 = [[selection firstObject] coordinate],
         c2 = [[selection lastObject] coordinate],
         coordinates = [c1, c2];
@@ -233,7 +233,7 @@ CPLogRegister(CPLogConsole);
 {
     var row = [tableView rowForView:sender],
         anns = [annotations objectsAtIndexes:[CPIndexSet indexSetWithIndex:row]];
-        
+
     [mapView setSelectedAnnotations:anns];
 }
 
@@ -294,25 +294,25 @@ CPLogRegister(CPLogConsole);
 - (void)mapViewWillStartLocatingUser:(MKMapView)aMapView
 {
     CPLog.debug(_cmd + aMapView);
-    
+
     var userLocation = [aMapView userLocation];
-    
+
     var circle = [MKCircle circleWithCenterCoordinate:[userLocation coordinate] radius:[userLocation _accuracy]];
     [circle setTitle:"circle"];
     [mapView addOverlay:circle];
-    
+
     [self insertObject:userLocation inAnnotationsAtIndex:[annotations count]];
 }
 
 - (void)mapViewDidStopLocatingUser:(MKMapView)aMapView
 {
     CPLog.debug(_cmd + aMapView);
-    
+
     var idx = [annotations indexOfObjectPassingTest:function(obj)
     {
-        return [obj isKindOfClass:[MKUserLocation class]]; 
+        return [obj isKindOfClass:[MKUserLocation class]];
     }];
-    
+
     if (idx !== CPNotFound)
         [self removeObjectFromAnnotationsAtIndex:idx];
 }
@@ -332,7 +332,7 @@ CPLogRegister(CPLogConsole);
     CPLog.debug(_cmd + aMapView);
     var title = [anOverlay title],
         renderer = nil;
-    
+
     if (title == @"direct")
     {
         renderer = [[MKPolylineRenderer alloc] initWithPolyline:anOverlay];
@@ -354,7 +354,7 @@ CPLogRegister(CPLogConsole);
         [renderer setStrokeColor:[CPColor whiteColor]];
         [renderer setLineWidth:4];
     }
-    
+
     return renderer;
 }
 

@@ -102,6 +102,7 @@ var frameworkTask = framework (productName, function(frameworkTask)
 
     includes.unshift("*.j");
     fileList.include(includes);
+    fileList.include("QuadTree.js");
     frameworkTask.setSources(fileList);
     frameworkTask.setResources(new FileList("Resources/**/*"));
     frameworkTask.setFlattensSources(true);
