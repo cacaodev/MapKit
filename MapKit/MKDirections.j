@@ -1,6 +1,6 @@
-@class MKDirectionsRequest;
-@class MKDirectionsResponse;
-@class MKRoute;
+@import "MKDirectionsRequest.j"
+@import "MKDirectionsResponse.j"
+@import "MKRoute.j"
 
 @global google;
 

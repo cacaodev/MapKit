@@ -39,7 +39,7 @@
 @global google;
 
 var _GoogleAPIScriptLoader = nil,
-    GOOGLE_API_URL = "http://maps.google.com/maps/api/js?sensor=false&callback=_GoogleMapsLoaded",
+    GOOGLE_API_URL = "http://maps.google.com/maps/api/js?v=3.exp&sensor=false&callback=_GoogleMapsLoaded",
     GOOGLE_API_CALLBACK = "_GoogleMapsLoaded",
     MAP_TYPES = ["roadmap", "hybrid", "satellite", "terrain"];
 
@@ -566,7 +566,7 @@ CPLog.debug(_cmd);
         return [delegate mapView:self viewForAnnotation:annotation];
     }
 
-    return [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:nil];
+    return [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:nil];
 }
 
 - (void)removeAnnotation:(id <MKAnnotation>)annotation

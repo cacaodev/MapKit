@@ -1,3 +1,6 @@
+@import <Foundation/CPBundle.j>
+@import <AppKit/CPImage.j>
+
 @import "MKAnnotationView.j"
 
 @implementation MKPinAnnotationView : MKAnnotationView
