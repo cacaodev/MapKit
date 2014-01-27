@@ -1,3 +1,5 @@
+@import "MKGeometry.j"
+@import <Foundation/CPObject.j>
 
 var ReusableOverlayViews = [];
 
@@ -54,29 +56,29 @@ var ReusableOverlayViews = [];
         // position of the overlay to peg it to the correct position and size.
         // We need to retrieve the projection from this overlay to do this.
         var overlayProjection = this.getProjection();
-        
+
         // Retrieve the southwest and northeast coordinates of this overlay
         // in latlngs and convert them to pixels coordinates.
         // We'll use these coordinates to resize the DIV.
         var sw = overlayProjection.fromLatLngToDivPixel(this.bounds.getSouthWest());
         var ne = overlayProjection.fromLatLngToDivPixel(this.bounds.getNorthEast());
-        
+
         // Resize the DIV to fit the indicated dimensions.
         var style = this._div.style,
             width = ne.x - sw.x,
             height = sw.y - ne.y;
-        
+
         style.left = sw.x + "px";
         style.top = ne.y + "px";
         style.width  = width + "px" ;
         style.height = height + "px";
-        
+
         var canvas = this._canvas;
         canvas.width = width;
         canvas.height = height;
-        
+
         var zoomScale = width / this.boundingWidth;
-        
+
         this.drawInMap(zoomScale, canvas.getContext("2d"));
     };
 }
@@ -101,7 +103,7 @@ var ReusableOverlayViews = [];
 }
 
 - (void)_addToMap:(MKMapView)aMapView
-{    
+{
     var boundingMapRect = [_overlay boundingMapRect];
 
     var drawHandler = function(aZoomScale, aContext)
@@ -109,7 +111,7 @@ var ReusableOverlayViews = [];
         [self _setContentScaleFactor:aZoomScale];
         [self drawMapRect:[aMapView visibleMapRect] zoomScale:aZoomScale inContext:aContext];
     };
-    
+
     _overlayView = new OverlayContainer(aMapView, boundingMapRect, drawHandler);
 }
 
@@ -122,7 +124,7 @@ var ReusableOverlayViews = [];
 {
     if (ReusableOverlayViews.length == 0)
         return nil;
-        
+
     return ReusableOverlayViews.pop();
 }
 
@@ -215,9 +217,9 @@ var OverlayContainer = function (aMapView, boundingMapRect, drawInMapHandler)
     this.bounds = LatLngBoundsFromMKCoordinateRegion(MKCoordinateRegionForMapRect(boundingMapRect));
     this.boundingWidth = MKMapRectGetWidth(boundingMapRect);
     this.drawInMap = drawInMapHandler;
-    
+
     this.setMap(aMapView._map);
-    
+
     return this;
 }
 

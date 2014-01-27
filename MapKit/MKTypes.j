@@ -33,3 +33,17 @@ MKMapTypeTerrain            = 3;
 MKDirectionsTransportTypeAutomobile = 0;
 MKDirectionsTransportTypeWalking    = 1;
 MKDirectionsTransportTypeAny        = 2;
+
+function TravelModeForTransportType(transportType)
+{
+    var travelModes = [MKDirectionsRequest g_travelModes];
+
+    return travelModes[transportType];
+}
+
+function TransportTypeForTravelMode(travelMode)
+{
+    var travelModes = [MKDirectionsRequest g_travelModes];
+
+    return travelModes.indexOf(travelMode);
+}

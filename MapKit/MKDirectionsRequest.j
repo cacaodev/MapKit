@@ -1,3 +1,7 @@
+@import <Foundation/CPObject.j>
+@import "MKGeometry.j"
+@import "MKTypes.j"
+
 @class MKMapItem;
 
 @global google;
@@ -59,17 +63,3 @@ var GOOGLE_TRAVEL_MODES = nil;
 }
 
 @end
-
-function TravelModeForTransportType(transportType)
-{
-    var travelModes = [MKDirectionsRequest g_travelModes];
-
-    return travelModes[transportType];
-}
-
-function TransportTypeForTravelMode(travelMode)
-{
-    var travelModes = [MKDirectionsRequest g_travelModes];
-
-    return travelModes.indexOf(travelMode);
-}

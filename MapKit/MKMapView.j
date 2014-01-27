@@ -33,9 +33,7 @@
 @import "ScriptLoader.j"
 @import "QuadTree.js"
 
-@class MKAnnotation;
 @class MKOverlay;
-@class MKPinAnnotationView;
 @class MKUserLocation;
 
 @global google;
@@ -60,6 +58,16 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     delegate_mapViewDidStopLocatingUser         = 1 << 14,
     delegate_mapView_didFailToLocateUserWithError = 1 << 15,
     delegate_mapViewDidFinishRenderingMap_fullyRendered = 1 << 16;
+
+@protocol MKAnnotation <CPObject>
+
+@optional
+- (CLLocationCoordinate2D)coordinate;
+- (void)setCoordinate:(CLLocationCoordinate2D)coordinate;
+- (CPString)title;
+- (CPString)subtitle;
+
+@end
 
 @implementation MKMapView : CPView
 {
@@ -160,7 +168,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     _delegateDidSendFinishLoading = NO;
     _options = [[MapOptions alloc] init];
     _annotationsQuadTree = nil;
-    _overlaysQuadTree = nil;
+//    _overlaysQuadTree = nil;
     _MKMapViewDelegateMethods = 0;
     _ViewForAnnotation = {};
     _RendererForOverlay = {};
@@ -459,7 +467,7 @@ CPLog.debug(_cmd);
     [_options setValue:shouldShow forKey:@"zoomControl"];
 }
 
-- (void)setOptions:(CPDictionary)opts
+- (void)setOptions:(MapOptions)opts
 {
     [_options _setOptionsFromDictionary:opts];
 }
@@ -558,7 +566,7 @@ CPLog.debug(_cmd);
         return [delegate mapView:self viewForAnnotation:annotation];
     }
 
-    return [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:nil];
+    return [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:nil];
 }
 
 - (void)removeAnnotation:(id <MKAnnotation>)annotation
@@ -616,14 +624,14 @@ CPLog.debug(_cmd);
         quad_rect = {x:origin.x, y:origin.y, w:size.width, h:size.height};
 
     var overlappingNodes = _annotationsQuadTree.retrieve(quad_rect);
-    
+
     [overlappingNodes enumerateObjectsUsingBlock:function(aNode, idx, stop)
-    {        
+    {
         var p = MKMapPointMake(aNode.x, aNode.y);
-    
+
         if (MKMapRectContainsPoint(mapRect, p))
             [result addObject:aNode.annotation];
-    }];    
+    }];
 
     return result;
 }
@@ -733,11 +741,11 @@ CPLog.debug(_cmd);
     [_overlays addObjectsFromArray:overlays];
 
     //[self addOverlaysToQuadTree:overlays];
-    
+
     [overlays enumerateObjectsUsingBlock:function(ov, idx, stop)
     {
         var renderer = [self _rendererForOverlay:ov];
-        [renderer _addToMap:self];        
+        [renderer _addToMap:self];
     }];
 }
 
@@ -750,11 +758,11 @@ CPLog.debug(_cmd);
 {
     if (![overlays count])
         return;
-        
+
     [overlays enumerateObjectsUsingBlock:function(ov, idx, stop)
     {
         var renderer = [self _rendererForOverlay:ov];
-        [renderer _remove];        
+        [renderer _remove];
     }];
 
     [_overlays removeObjectsInArray:overlays];
@@ -788,7 +796,7 @@ CPLog.debug(_cmd);
     {
         var point = MKMapPointForCoordinate([anAnnotation coordinate]),
             node = {annotation:anAnnotation, x:point.x, y:point.y};
-        
+
         _annotationsQuadTree.insert(node);
     }];
 }
@@ -798,7 +806,7 @@ CPLog.debug(_cmd);
     [self insertObjects:overlays inQuadTree:_overlaysQuadTree usingNodeFunction:function(anOverlay)
     {
         var boundingMapRect = [anOverlay boundingMapRect];
-        
+
         return {overlay:anOverlay,
                       x:MKMapRectGetMinX(boundingMapRect),
                       y:MKMapRectGetMinY(boundingMapRect),
@@ -839,7 +847,7 @@ CPLog.debug(_cmd);
         var overlay = item.overlay,
             count = [toRemove count],
             found = NO;
-            
+
         while (count--)
         {
             if (overlay == toRemove[count])
@@ -847,7 +855,7 @@ CPLog.debug(_cmd);
                 [toRemove removeObjectAtIndex:count];
                 [unchanged addObject:overlay];
                 found = YES;
-                
+
                 break;
             }
         }
@@ -857,7 +865,7 @@ CPLog.debug(_cmd);
 
         [newVisibleOverlays addObject:overlay];
     }];
-        
+
     console.log("REMOVE: " + toRemove + " ADD: " + toAdd + " Unchanged: " + unchanged);
 
     if ([toAdd count])
@@ -900,14 +908,14 @@ CPLog.debug(_cmd);
 - (void)enumerateItemsInMapRect:(MKMapRect)aMapRect usingBlock:(Function)aFunction
 {
     var overlappingItems = _overlaysQuadTree.retrieve(aMapRect);
-    
+
     [overlappingItems enumerateObjectsUsingBlock:function(item, idx, stop)
-    {        
+    {
         var itemMapRect = MKMapRectMake(item.x, item.y, item.width, item.height);
-    
+
         if (CGRectIntersectsRect(itemMapRect, aMapRect))
             aFunction(item);
-    }];    
+    }];
 }
 */
 // User location

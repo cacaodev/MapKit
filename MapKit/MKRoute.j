@@ -1,4 +1,4 @@
-@class MKRouteStep;
+@import "MKRouteStep.j"
 
 @implementation MKRoute : CPObject
 {

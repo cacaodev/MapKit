@@ -1,4 +1,8 @@
+@import <Foundation/CPObject.j>
+@import <Foundation/CPString.j>
+
 @import "MKShape.j"
+@import "MKGeometry.j"
 
 @implementation MKMultiPoint : MKShape
 {
