@@ -536,18 +536,16 @@ CPLog.debug(_cmd);
 
 - (void)_addAnnotations:(CPArray)aAnnotationArray
 {
-	var annotationsCount = [aAnnotationArray count];
-
-	for (var i = 0; i < annotationsCount; i++)
+	[aAnnotationArray enumerateObjectsUsingBlock:function(annotation, idx, stop)
 	{
-		var annotation = aAnnotationArray[i],
-		    annotationView = [self _dequeueViewForAnnotation:annotation];
+		var annotationView = [self _dequeueViewForAnnotation:annotation],
+		    uuid = [annotation UID];
 
         [annotationView _updateMarkerAndOverlayForMap:_map];
-		_ViewForAnnotation[[annotation UID]] = annotationView;
+		_ViewForAnnotation[uuid] = annotationView;
 
 		[_annotations addObject:annotation];
-	}
+	}];
 
     if (!_annotationsQuadTree)
         _annotationsQuadTree = new QuadTree(MKMapRectWorld(), true);
@@ -579,6 +577,9 @@ CPLog.debug(_cmd);
 {
     var count = [aAnnotationArray count];
 
+    if (count == 0)
+        return;
+
     while (count--)
     {
         var annotation = [aAnnotationArray objectAtIndex:count];
@@ -593,7 +594,9 @@ CPLog.debug(_cmd);
         [_annotations removeObjectIdenticalTo:annotation];
     }
 
-    _annotationsQuadTree.clear();
+    if (_annotationsQuadTree)
+        _annotationsQuadTree.clear();
+
     [self addAnnotationsToQuadTree:_annotations];
 }
 
@@ -644,12 +647,14 @@ CPLog.debug(_cmd);
 */
 - (void)showAnnotations:(CPArray)annotations animated:(BOOL)animated
 {
-    if ([annotations count] == 0)
+    var count = [annotations count];
+
+    if (count == 0)
         return;
-
-    var mapRect = [self _mapRectForAnnotations:annotations];
-
-    [self setVisibleMapRect:mapRect];
+    else if (count == 1)
+        [self setCenterCoordinate:[[annotations objectAtIndex:0] coordinate]];
+    else
+        [self setVisibleMapRect:[self _mapRectForAnnotations:annotations]];
 }
 
 - (MKMapRect)_mapRectForAnnotations:(CPArray)annotations
@@ -668,7 +673,7 @@ CPLog.debug(_cmd);
         var region = MKCoordinateRegionCopy(_region);
         region.center = coordinate;
 
-        result = MKMapRectForCoordinateRegion(region);
+        result = MKMapRectForCoordinateRegion(region); // Something wrong here. The scale changes, it should not.
     }
     else
     {
