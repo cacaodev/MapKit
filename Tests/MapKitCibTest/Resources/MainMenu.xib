@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="4457.9" systemVersion="13A510d" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="5056" systemVersion="13C64" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
         <deployment version="1050" identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="4457.9"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="5056"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -23,7 +23,7 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <customView id="460" customClass="MKMapView">
-                        <rect key="frame" x="20" y="65.000004573688614" width="444" height="364"/>
+                        <rect key="frame" x="20" y="65.000002250479611" width="444" height="364"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES" heightSizable="YES"/>
                         <connections>
                             <outlet property="delegate" destination="450" id="498"/>
@@ -36,6 +36,9 @@
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="showAnnotations:" target="450" id="497"/>
+                        </connections>
                     </button>
                     <textField verticalHuggingPriority="750" id="488">
                         <rect key="frame" x="24" y="23" width="481" height="17"/>
@@ -56,6 +59,9 @@
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="add:" target="516" id="532"/>
+                        </connections>
                     </button>
                     <scrollView autohidesScrollers="YES" horizontalLineScroll="51" horizontalPageScroll="10" verticalLineScroll="51" verticalPageScroll="10" usesPredominantAxisScrolling="NO" id="499">
                         <rect key="frame" x="529" y="65" width="190" height="322"/>
@@ -119,6 +125,9 @@
                                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                                 <font key="font" metaFont="system"/>
                                                             </buttonCell>
+                                                            <connections>
+                                                                <action selector="selectAnnotation:" target="450" id="Hn7-hD-vFM"/>
+                                                            </connections>
                                                         </button>
                                                     </subviews>
                                                     <connections>
@@ -136,11 +145,11 @@
                             </subviews>
                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </clipView>
-                        <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" id="501">
+                        <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="501">
                             <rect key="frame" x="1" y="119" width="223" height="15"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
-                        <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" id="503">
+                        <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="503">
                             <rect key="frame" x="224" y="17" width="15" height="102"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
@@ -156,6 +165,9 @@
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="remove:" target="516" id="533"/>
+                        </connections>
                     </button>
                     <segmentedControl verticalHuggingPriority="750" id="539">
                         <rect key="frame" x="18" y="465" width="187" height="24"/>
@@ -168,6 +180,9 @@
                                 <segment label="Hybrid" tag="1"/>
                             </segments>
                         </segmentedCell>
+                        <connections>
+                            <action selector="setMapType:" target="450" id="541"/>
+                        </connections>
                     </segmentedControl>
                     <textField verticalHuggingPriority="750" id="484">
                         <rect key="frame" x="18" y="434" width="445" height="22"/>
@@ -177,6 +192,9 @@
                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
+                        <connections>
+                            <action selector="geocode:" target="450" id="486"/>
+                        </connections>
                     </textField>
                     <button verticalHuggingPriority="750" id="542">
                         <rect key="frame" x="867" y="391" width="104" height="32"/>
@@ -185,6 +203,9 @@
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="directions:" target="450" id="544"/>
+                        </connections>
                     </button>
                     <scrollView autohidesScrollers="YES" horizontalLineScroll="83" horizontalPageScroll="10" verticalLineScroll="83" verticalPageScroll="10" usesPredominantAxisScrolling="NO" id="4Hx-1q-e28">
                         <rect key="frame" x="739" y="65" width="226" height="322"/>
@@ -260,11 +281,11 @@
                             </subviews>
                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </clipView>
-                        <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" id="CR9-j1-iMc">
+                        <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="CR9-j1-iMc">
                             <rect key="frame" x="1" y="119" width="223" height="15"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
-                        <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" doubleValue="1" id="Vjn-l8-Oti">
+                        <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="Vjn-l8-Oti">
                             <rect key="frame" x="224" y="17" width="15" height="102"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
@@ -280,6 +301,9 @@
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="addOverlay:" target="450" id="sSg-Ra-wQg"/>
+                        </connections>
                     </button>
                     <button verticalHuggingPriority="750" id="IpR-Vo-jA3">
                         <rect key="frame" x="665" y="426" width="164" height="32"/>
@@ -288,6 +312,9 @@
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="removeOverlays:" target="450" id="y6n-qs-bkN"/>
+                        </connections>
                     </button>
                     <button id="dgG-ib-WZK">
                         <rect key="frame" x="527" y="399" width="145" height="18"/>
@@ -296,6 +323,9 @@
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="showUserLocation:" target="450" id="WQc-O6-jzF"/>
+                        </connections>
                     </button>
                 </subviews>
             </view>
@@ -305,14 +335,6 @@
         </window>
         <customObject id="450" customClass="AppController">
             <connections>
-                <action selector="addOverlay:" destination="6GH-a8-aO9" id="sSg-Ra-wQg"/>
-                <action selector="directions:" destination="542" id="544"/>
-                <action selector="geocode:" destination="484" id="486"/>
-                <action selector="removeOverlays:" destination="IpR-Vo-jA3" id="y6n-qs-bkN"/>
-                <action selector="selectAnnotation:" destination="yUw-tm-GJg" id="Hn7-hD-vFM"/>
-                <action selector="setMapType:" destination="539" id="541"/>
-                <action selector="showAnnotations:" destination="481" id="497"/>
-                <action selector="showUserLocation:" destination="dgG-ib-WZK" id="WQc-O6-jzF"/>
                 <outlet property="mapView" destination="460" id="461"/>
                 <outlet property="tableView" destination="500" id="526"/>
                 <outlet property="theWindow" destination="371" id="459"/>
@@ -325,8 +347,6 @@
         </objectController>
         <arrayController objectClassName="MKPointAnnotation" automaticallyPreparesContent="YES" id="516" userLabel="Annotations" customClass="ArrayController">
             <connections>
-                <action selector="add:" destination="494" id="532"/>
-                <action selector="remove:" destination="521" id="533"/>
                 <binding destination="450" name="contentArray" keyPath="annotations" id="529">
                     <dictionary key="options">
                         <bool key="NSValidatesImmediately" value="YES"/>
@@ -340,25 +360,4 @@
             </connections>
         </arrayController>
     </objects>
-    <classes>
-        <class className="AppController" superclassName="NSObject">
-            <source key="sourceIdentifier" type="project" relativePath="./Classes/AppController.h"/>
-            <relationships>
-                <relationship kind="action" name="addOverlay:"/>
-                <relationship kind="action" name="directions:"/>
-                <relationship kind="action" name="geocode:"/>
-                <relationship kind="action" name="removeOverlays:"/>
-                <relationship kind="action" name="selectAnnotation:"/>
-                <relationship kind="action" name="setMapType:"/>
-                <relationship kind="action" name="showAnnotations:"/>
-                <relationship kind="action" name="showUserLocation:"/>
-                <relationship kind="outlet" name="mapView" candidateClass="MKMapView"/>
-                <relationship kind="outlet" name="tableView" candidateClass="NSTableView"/>
-                <relationship kind="outlet" name="theWindow" candidateClass="NSWindow"/>
-            </relationships>
-        </class>
-        <class className="ArrayController" superclassName="NSArrayController">
-            <source key="sourceIdentifier" type="project" relativePath="./Classes/ArrayController.h"/>
-        </class>
-    </classes>
 </document>
