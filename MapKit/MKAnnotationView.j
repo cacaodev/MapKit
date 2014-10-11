@@ -107,8 +107,7 @@
         _marker = new google.maps.Marker({
             position: LatLngFromCLLocationCoordinate2D([_annotation coordinate]),
             clickable:_enabled,
-            title:[_annotation title],
-            animation:google.maps.Animation.DROP
+            title:[_annotation title]
         });
 
         if (_image)
