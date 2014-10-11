@@ -349,10 +349,11 @@ CPLogRegister(CPLogConsole);
     else if (title == @"circle")
     {
         renderer = [[MKCircleRenderer alloc] initWithCircle:anOverlay];
-        [renderer setFillColor:[CPColor redColor]];
+        [renderer setFillColor:[CPColor greenColor]];
+        [renderer setAlpha:0.3];
 
-        [renderer setStrokeColor:[CPColor whiteColor]];
-        [renderer setLineWidth:4];
+        [renderer setStrokeColor:[CPColor colorWithRed:0.2 green:0.8 blue:0.2 alpha:1]];
+        [renderer setLineWidth:5];
     }
 
     return renderer;

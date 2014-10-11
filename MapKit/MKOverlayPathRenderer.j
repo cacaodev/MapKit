@@ -10,14 +10,14 @@
     float     _miterLimit      @accessors(property=miterLimit);
     float     _lineDashPhase   @accessors(property=lineDashPhase);
     CPArray   _lineDashPattern @accessors(property=lineDashPattern);
-    
+
     CGPath _path               @accessors(setter=setPath:);
 }
 
 - (id)initWithOverlay:(id)anOverlay
 {
     self = [super initWithOverlay:anOverlay];
-    
+
     _fillColor = nil;
     _strokeColor = nil;
     _lineWidth = 1.0;
@@ -27,7 +27,7 @@
     _lineDashPhase = 0;
     _lineDashPattern = [];
     _path = nil;
-    
+
     return self;
 }
 
@@ -36,7 +36,7 @@
     if (scaleFactor !== _contentScaleFactor)
     {
         [super _setContentScaleFactor:scaleFactor];
-        [self invalidatePath];   
+        [self invalidatePath];
     }
 }
 
@@ -44,12 +44,13 @@
 {
     if (!_path)
         [self createPath];
-        
+
     return _path;
 }
 
 - (void)createPath
 {
+    //Implemented by subclasses
 }
 
 - (void)invalidatePath
@@ -80,11 +81,11 @@
 {
     if (!_fillColor)
         return;
-    
+
     CGContextBeginPath(context);
     CGContextAddPath(context, path);
     CGContextClosePath(context);
-    
+
     CGContextFillPath(context);
 }
 
@@ -92,11 +93,11 @@
 {
     if (!_strokeColor)
         return;
-    
+    // TODO: inset the strokePath by lineWidth/2 ?
     CGContextBeginPath(context);
     CGContextAddPath(context, path);
     //CGContextClosePath(context);
-    
+
     CGContextStrokePath(context);
 }
 
