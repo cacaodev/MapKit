@@ -20,7 +20,7 @@ var MKPinAnnotationColorRed  = 0,
 {
     self = [super initWithAnnotation:anAnnotation reuseIdentifier:[self className]];
 
-    [self setPinColor:MKPinAnnotationColorGreen];
+    [self setPinColor:MKPinAnnotationColorPurple];
 
     _draggable = YES;
     _animatesDrop = NO;
