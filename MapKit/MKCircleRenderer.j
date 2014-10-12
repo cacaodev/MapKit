@@ -32,10 +32,15 @@
 
 - (void)createPath
 {
-    var rect = [self rectForMapRect:[_overlay boundingMapRect]],
-        inset = [self strokeColor] ? CEIL([self lineWidth] / 2) : 0;
+    var rect = [self rectForMapRect:[_overlay boundingMapRect]];
 
-    _path = CGPathWithEllipseInRect(CGRectInset(rect, inset, inset));
+    if ([self strokeColor])
+    {
+        var inset = MIN(CEIL([self lineWidth] / 2) , CGRectGetWidth(rect) / 2);
+        rect = CGRectInset(rect, inset, inset);
+    }
+
+    _path = CGPathWithEllipseInRect(rect);
 }
 
 @end
