@@ -92,7 +92,7 @@
         }
         else
         {
-            error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:-1 userInfo:@{CPLocalizedDescriptionKey:status}];
+            error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:-1 userInfo:@{CPLocalizedDescriptionKey:LocalizedDescriptionForStatus(status)}];
             placemarks = nil;
         }
 
@@ -102,3 +102,25 @@
 }
 
 @end
+
+var LocalizedDescriptionForStatus = function(status)
+{
+    var geocoderSatus = google.maps.GeocoderStatus,
+        desc = nil;
+
+    switch (status)
+    {
+        case geocoderSatus.ZERO_RESULTS : desc = "The geocode was successful but returned no results" ;
+        break;
+        case geocoderSatus.OVER_QUERY_LIMIT : desc = "You are over your quota";
+        break;
+        case geocoderSatus.REQUEST_DENIED : desc = "your request was denied";
+        break;
+        case geocoderSatus.INVALID_REQUEST : desc = "the query (address, components or latlng) is missing";
+        break;
+        case geocoderSatus.UNKNOWN_ERROR : desc = " the request could not be processed due to a server error";
+        break;
+    }
+
+    return desc;
+};
