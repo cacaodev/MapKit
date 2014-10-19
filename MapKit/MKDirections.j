@@ -43,14 +43,10 @@
             [response setSource:[_request source]];
             [response setDestination:[_request destination]]; // ???
 
-            var g_routes = results.routes,
-                routes = [];
-
-            for (var i = 0; i < g_routes.length; i++)
+            var routes = [results.routes arrayByApplyingBlock:function(g_route, idx)
             {
-                var route = [[MKRoute alloc] initWithJSON:g_routes[i]];
-                [routes addObject:route];
-            }
+                return [[MKRoute alloc] initWithJSON:g_route];
+            }];
 
             [response setRoutes:routes];
 

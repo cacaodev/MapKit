@@ -7,12 +7,10 @@
 
 + (MKPolyline)polylineWithCoordinates:(CPArray)coords count:(CPInteger)count
 {
-    var points = [];
-    for (var i = 0; i < count; i++)
+    var points = [coords arrayByAppyingBlock:function(coord)
     {
-        var p = MKMapPointForCoordinate(coords[i]);
-        points.push(p);
-    }
+        return MKMapPointForCoordinate(coord);
+    }];
 
     return [MKPolyline polylineWithPoints:points count:count];
 }

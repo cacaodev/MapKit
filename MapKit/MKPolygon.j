@@ -12,12 +12,9 @@
 
 + (MKPolygon)polygonWithCoordinates:(CLLocationCoordinate2D)coords count:(CPInteger)count interiorPolygons:(CPArray)interiorPolygons
 {
-    var points = [];
-    for (var i = 0; i < count; i++)
-    {
-        var p = MKMapPointForCoordinate(coords[i]);
-        points.push(p);
-    }
+    var points = [coords arrayByAppyingBlock:function(coord){
+        return MKMapPointForCoordinate(coord);
+    }];
 
     return [MKPolygon polygonWithPoints:points count:count interiorPolygons:interiorPolygons];
 }

@@ -85,11 +85,9 @@
         if (status == google.maps.GeocoderStatus.OK)
         {
             error = nil;
-            placemarks = [CPArray array];
-            [results enumerateObjectsUsingBlock:function(result, idx)
+            placemarks = [results arrayByApplyingBlock:function(result, idx)
             {
-                var placemark = [[MKPlacemark alloc] initWithJSON:result];
-                [placemarks addObject:placemark];
+                return [[MKPlacemark alloc] initWithJSON:result];
             }];
         }
         else
