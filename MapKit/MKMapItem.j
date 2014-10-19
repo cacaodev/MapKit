@@ -53,7 +53,7 @@ var mapItemForCurrentLocation = nil;
 - (CLLocationCoordinate2D)_coordinate
 {
     if (_isCurrentLocation)
-        return CLLocationCoordinate2DMake(-1,-1);
+        return CLLocationCoordinate2DMake(-1, -1);
 
     return [_placemark coordinate];
 }

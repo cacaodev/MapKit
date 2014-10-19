@@ -25,9 +25,9 @@
     _radius = radius;
 
     var midWidth = _radius / 40075017 * MKWORLD_SIZE,
-        width = 2 * midWidth;
+        width = 2 * midWidth,
+        center = MKMapPointForCoordinate(_coordinate);
 
-    var center = MKMapPointForCoordinate(_coordinate);
     _boundingMapRect = MKMapRectMake(center.x - midWidth, center.y - midWidth, width, width);
 
     return self;

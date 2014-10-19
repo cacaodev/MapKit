@@ -25,7 +25,7 @@
     var path = [self path];
 
     if (!CGPathIsEmpty(path))
-    {    
+    {
         [self applyStrokePropertiesToContext:context atZoomScale:zoomScale];
         [self strokePath:path inContext:context];
     }
@@ -60,7 +60,7 @@
     {
         for (var i = 1; i < count; i++)
         {
-            var p = [self pointForMapPoint:points[i]];//[self pointForMapPoint:points[i]];
+            var p = [self pointForMapPoint:points[i]];
             CGPathAddLineToPoint(path, NULL, p.x, p.y);
         }
     }
