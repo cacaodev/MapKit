@@ -77,6 +77,7 @@
 - (void)_geocodeWithRequest:(Object)properties completionHandler:(Function /*(placemarks, error)*/)completionHandler
 {
     geocoding = YES;
+
     _geocoder.geocode(properties, function(results, status)
     {
         var placemarks,
@@ -92,7 +93,7 @@
         }
         else
         {
-            error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:-1 userInfo:@{CPLocalizedDescriptionKey:LocalizedDescriptionForStatus(status)}];
+            error = [CPError errorWithDomain:CPCappuccinoErrorDomain code:-1 userInfo:ErrorUserInfoForStatus(status)];
             placemarks = nil;
         }
 
@@ -103,24 +104,30 @@
 
 @end
 
-var LocalizedDescriptionForStatus = function(status)
+var ErrorUserInfoForStatus = function(status)
 {
     var geocoderSatus = google.maps.GeocoderStatus,
-        desc = nil;
+        localizedDescription = nil,
+        failureReason = nil;
 
     switch (status)
     {
-        case geocoderSatus.ZERO_RESULTS : desc = "The geocode was successful but returned no results" ;
+        case geocoderSatus.ZERO_RESULTS     : failureReason = "The geocode was successful but returned no results" ;
+                                              localizedDescription = "No results";
         break;
-        case geocoderSatus.OVER_QUERY_LIMIT : desc = "You are over your quota";
+        case geocoderSatus.OVER_QUERY_LIMIT : failureReason = "You are over your quota";
+                                              localizedDescription = "Over Query Limit";
         break;
-        case geocoderSatus.REQUEST_DENIED : desc = "your request was denied";
+        case geocoderSatus.REQUEST_DENIED   : failureReason = "Your request was denied";
+                                              localizedDescription = "Request Denied";
         break;
-        case geocoderSatus.INVALID_REQUEST : desc = "the query (address, components or latlng) is missing";
+        case geocoderSatus.INVALID_REQUEST  : failureReason = "The query (address, components or latlng) is missing";
+                                              localizedDescription = "Invalid Request";
         break;
-        case geocoderSatus.UNKNOWN_ERROR : desc = " the request could not be processed due to a server error";
+        case geocoderSatus.UNKNOWN_ERROR    : failureReason = " The request could not be processed due to a server error";
+                                              localizedDescription = "Unknown Error";
         break;
     }
 
-    return desc;
+    return @{CPLocalizedDescriptionKey:localizedDescription , CPLocalizedFailureReasonErrorKey:failureReason};
 };
