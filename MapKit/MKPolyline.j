@@ -1,4 +1,5 @@
 @import "MKMultiPoint.j"
+@import "CPArray_Additions.j"
 
 @implementation MKPolyline : MKMultiPoint
 {
@@ -7,7 +8,7 @@
 
 + (MKPolyline)polylineWithCoordinates:(CPArray)coords count:(CPInteger)count
 {
-    var points = [coords arrayByAppyingBlock:function(coord)
+    var points = [coords arrayByApplyingBlock:function(coord)
     {
         return MKMapPointForCoordinate(coord);
     }];

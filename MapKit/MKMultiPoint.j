@@ -3,6 +3,7 @@
 
 @import "MKShape.j"
 @import "MKGeometry.j"
+@import "CPArray_Additions.j"
 
 @implementation MKMultiPoint : MKShape
 {
