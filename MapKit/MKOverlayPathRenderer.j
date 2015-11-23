@@ -28,7 +28,26 @@
     _lineDashPattern = [];
     _path = nil;
 
+    // TODO: add/remove obervers when on-off screen
+    [self addObserver:self forKeyPath:@"fillColor" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+    [self addObserver:self forKeyPath:@"strokeColor" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+    [self addObserver:self forKeyPath:@"lineWidth" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+    [self addObserver:self forKeyPath:@"lineJoin" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+    [self addObserver:self forKeyPath:@"lineCap" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+    [self addObserver:self forKeyPath:@"miterLimit" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+    [self addObserver:self forKeyPath:@"lineDashPhase" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+    [self addObserver:self forKeyPath:@"lineDashPattern" options:CPKeyValueObservingOptionNew context:"needsDisplay"];
+
     return self;
+}
+
+- (void)observeValueForKeyPath:(CPString)keyPath ofObject:(id)object change:(CPDictionary)change context:(void)context
+{
+    if (context == "needsDisplay")
+    {
+        [self setNeedsDisplay];
+        [self displayIfNeededInMapRect:[_overlay boundingMapRect] zoomScale:_contentScaleFactor];
+    }
 }
 
 - (void)_setContentScaleFactor:(float)scaleFactor
@@ -57,7 +76,6 @@
 {
     _path = nil;
     CPLog.debug(_cmd);
-    //[self setNeedsDisplay];
 }
 
 - (void)applyStrokePropertiesToContext:(CGContext)context atZoomScale:(float)zoomScale
