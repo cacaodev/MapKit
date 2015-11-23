@@ -41,16 +41,19 @@ CPLogRegister(CPLogConsole);
     annotations = [CPArray array];
     steps = [CPArray array];
 
-    [self addObserver:self forKeyPath:@"annotations" options:CPKeyValueObservingOptionNew context:nil];
+    [self addObserver:self forKeyPath:@"annotations" options:CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld  context:"annotations"];
 
     return self;
 }
 
 - (void)observeValueForKeyPath:(CPString)keyPath ofObject:(id)object change:(CPDictionary)change context:(void)context
 {
+    if (context !== "annotations")
+        return;
+
     var kind = [change objectForKey:CPKeyValueChangeKindKey];
 
-    if (kind == 2)
+    if (kind == CPKeyValueChangeInsertion)
     {
         var annotation = [[change objectForKey:CPKeyValueChangeNewKey] firstObject],
             location = [annotation coordinate];
@@ -61,10 +64,15 @@ CPLogRegister(CPLogConsole);
             [annotation setCoordinate:location];
         }
 
-        [mapView addAnnotation:annotation];
-
-        if ([annotation isKindOfClass:[MKUserLocation class]])
+        if ([annotation isKindOfClass:[MKPointAnnotation class]] || [annotation isKindOfClass:[MKUserLocation class]])
+        {
+            [mapView addAnnotation:annotation];
+        }
+        else if ([annotation isKindOfClass:[MKShape class]])
+        {
+            [mapView addOverlay:annotation];
             return;
+        }
 
         var geocoder = [[MKGeocoder alloc] init];
         [geocoder reverseGeocodeLocation:location completionHandler:function (placemarks, error)
@@ -74,7 +82,8 @@ CPLogRegister(CPLogConsole);
 
             if (error)
             {
-                country = [error description];
+                country = "Error";
+                locality = [error localizedDescription];
             }
             else
             {
@@ -89,19 +98,31 @@ CPLogRegister(CPLogConsole);
             [annotation setSubtitle:locality];
         }];
     }
-    else if (kind == 3)
+    else if (kind == CPKeyValueChangeRemoval)
     {
-        var anns = [change objectForKey:CPKeyValueChangeOldKey];
-        [mapView removeAnnotations:anns];
+        var objects = [change objectForKey:CPKeyValueChangeOldKey];
+
+        [objects enumerateObjectsUsingBlock:function(annotation, idx)
+        {
+            if ([annotation isKindOfClass:[MKPointAnnotation class]] || [annotation isKindOfClass:[MKUserLocation class]])
+            {
+                [mapView removeAnnotation:annotation];
+            }
+            else if ([annotation isKindOfClass:[MKShape class]])
+            {
+                [mapView removeOverlay:annotation];
+            }
+        }];
     }
 }
 
 - (void)tableViewSelectionDidChange:(CPNotification)aNotification
 {
-    var indexes = [[aNotification object] selectedRowIndexes],
-        selection = [annotations objectsAtIndexes:indexes];
+    [self willChangeValueForKey:@"canSelectOne"];
+    [self didChangeValueForKey:@"canSelectOne"];
 
-// change state
+    [self willChangeValueForKey:@"canSelectMany"];
+    [self didChangeValueForKey:@"canSelectMany"];
 }
 
 - (CPArray)selectedAnnotations
@@ -210,23 +231,12 @@ CPLogRegister(CPLogConsole);
 
 - (IBAction)addOverlay:(id)sender
 {
-    var selection = [self selectedAnnotations];
-
-    if ([selection count] < 2)
-        return;
-
-    var c1 = [[selection firstObject] coordinate],
-        c2 = [[selection lastObject] coordinate],
-        coordinates = [c1, c2];
+    var coordinates = [[self selectedAnnotations] valueForKey:@"coordinate"];
 
     var polyline = [MKPolyline polylineWithCoordinates:coordinates count:coordinates.length];
     [polyline setTitle:"direct"];
-    [mapView addOverlay:polyline];
-}
 
-- (IBAction)removeOverlays:(id)sender
-{
-    [mapView removeOverlays:[mapView overlays]];
+    [self insertObject:polyline inAnnotationsAtIndex:[annotations count]];
 }
 
 - (IBAction)selectAnnotation:(id)sender
@@ -235,6 +245,12 @@ CPLogRegister(CPLogConsole);
         anns = [annotations objectsAtIndexes:[CPIndexSet indexSetWithIndex:row]];
 
     [mapView setSelectedAnnotations:anns];
+}
+
+- (IBAction)removeSelected:(id)sender
+{
+    var selected  = [tableView selectedRowIndexes];
+    [self removeObjectFromAnnotationsAtIndex:[selected firstIndex]];
 }
 
 - (IBAction)showUserLocation:(id)sender
@@ -248,9 +264,9 @@ CPLogRegister(CPLogConsole);
     [annotations insertObject:anObject atIndex:anIndex];
 }
 
-- (void)removeObjectFromAnnotationsAtIndex:(unsigned int)index
+- (void)removeObjectFromAnnotationsAtIndex:(CPInteger)anIndex
 {
-    [annotations removeObjectAtIndex:index];
+    [annotations removeObjectAtIndex:anIndex];
 }
 
 - (id)objectInAnnotationsAtIndex:(CPInteger)anIndex
@@ -261,6 +277,16 @@ CPLogRegister(CPLogConsole);
 - (CPInteger)countOfAnnotations
 {
     return [annotations count];
+}
+
+- (BOOL)canSelectOne
+{
+    return [[self selectedAnnotations] count] > 0;
+}
+
+- (BOOL)canSelectMany
+{
+    return [[self selectedAnnotations] count] >= 2;
 }
 
 - (void)awakeFromCib
@@ -277,7 +303,10 @@ CPLogRegister(CPLogConsole);
 // Delegate methods
 - (void)mapViewDidFinishLoadingMap:(MKMapView)aMapView
 {
-    CPLog.debug(_cmd + aMapView + [aMapView delegate]);
+    var w = MKMapRectWorld();
+    var coord1 = MKCoordinateForMapPoint(MKMapPointMake(0,0));
+    var coord2 = MKCoordinateForMapPoint(MKMapPointMake(MKMapRectGetMaxX(w), MKMapRectGetMaxY(w)));
+    CPLog.debug(_cmd + coord1 + " " + coord2);
     //[mapView setVisibleMapRect:MKMapRectMake(135848897.4, 92271183.5, 235520.1, 146944.0)];
 }
 
@@ -299,22 +328,14 @@ CPLogRegister(CPLogConsole);
 
     var circle = [MKCircle circleWithCenterCoordinate:[userLocation coordinate] radius:[userLocation _accuracy]];
     [circle setTitle:"circle"];
-    [mapView addOverlay:circle];
 
+    [self insertObject:circle inAnnotationsAtIndex:[annotations count]];
     [self insertObject:userLocation inAnnotationsAtIndex:[annotations count]];
 }
 
 - (void)mapViewDidStopLocatingUser:(MKMapView)aMapView
 {
     CPLog.debug(_cmd + aMapView);
-
-    var idx = [annotations indexOfObjectPassingTest:function(obj)
-    {
-        return [obj isKindOfClass:[MKUserLocation class]];
-    }];
-
-    if (idx !== CPNotFound)
-        [self removeObjectFromAnnotationsAtIndex:idx];
 }
 
 - (void)mapView:(MKMapView)aMapView didFailToLocateUserWithError:(CPError)anError
@@ -337,7 +358,7 @@ CPLogRegister(CPLogConsole);
     {
         renderer = [[MKPolylineRenderer alloc] initWithPolyline:anOverlay];
         [renderer setStrokeColor:[CPColor blueColor]];
-        [renderer setLineWidth:4.0];
+        [renderer setLineWidth:2.0];
     }
     else if (title == @"route")
     {
@@ -346,7 +367,7 @@ CPLogRegister(CPLogConsole);
         [renderer setLineDashPattern:[4,1]];
         [renderer setLineWidth:4.0];
     }
-    else if (title == @"circle")
+    else if ([anOverlay isKindOfClass:[MKCircle class]])
     {
         renderer = [[MKCircleRenderer alloc] initWithCircle:anOverlay];
         [renderer setFillColor:[CPColor greenColor]];
@@ -357,6 +378,36 @@ CPLogRegister(CPLogConsole);
     }
 
     return renderer;
+}
+
+- (IBAction)setLineWidth:(id)sender
+{
+    var lineWidth = [sender floatValue],
+        overlay = [annotations objectAtIndex:[tableView rowForView:sender]];
+
+    [[mapView _rendererForOverlay:overlay] setLineWidth:lineWidth];
+}
+
+- (IBAction)setStrokeColor:(id)sender
+{
+    var color = [sender color],
+        overlay = [annotations objectAtIndex:[tableView rowForView:sender]];
+
+    [[mapView _rendererForOverlay:overlay] setStrokeColor:color];
+}
+
+- (CPView)tableView:(CPTableView)aTableView viewForTableColumn:(CPTableColumn)tableColumn row:(CPInteger)row
+{
+    var object = [self objectInAnnotationsAtIndex:row];
+
+    var identifier;
+
+    if ([object isKindOfClass:MKPointAnnotation] || [object isKindOfClass:MKUserLocation])
+        identifier = "annotation";
+    else
+        identifier = "overlay";
+
+    return [aTableView makeViewWithIdentifier:identifier owner:self];
 }
 
 @end
