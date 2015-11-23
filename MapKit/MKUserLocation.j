@@ -1,4 +1,4 @@
-@implementation MKUserLocation : CPObject
+@implementation MKUserLocation : CPObject <MKAnnotation>
 {
     CLLocationCoordinate2D  _location @accessors(getter=location, setter=_setLocation:);
     CPInteger               _heading  @accessors(getter=heading, setter=_setHeading:);
@@ -11,15 +11,15 @@
 - (id)init
 {
     self = [super init];
-    
+
     _location = nil;
     _heading = 0;
     _accuracy = CPNotFound;
     _updating = NO;
-    
+
     _title = nil;
     _subtitle = nil;
-    
+
     return self;
 }
 

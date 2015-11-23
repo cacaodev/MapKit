@@ -14,7 +14,7 @@ var JSON_NAME_MAPPING =
     postal_code:"postalCode"
 };
 
-@implementation MKPlacemark : CPObject
+@implementation MKPlacemark : CPObject <MKAnnotation>
 {
    CPDictionary             addressDictionary @accessors(readonly);
    CLLocationCoordinate2D   coordinate        @accessors();
