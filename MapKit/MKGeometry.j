@@ -282,6 +282,12 @@ function MKMapRectContainsPoint(aMapRect, aMapPoint)
             aMapPoint.y < CGRectGetMaxY(aMapRect));
 }
 
+function MKMapRectIsEmpty(aMapRect)
+{
+    var size = aMapRect.size;
+    return size.width === 0 && size.height === 0;
+}
+
 function MKMapRectForCoordinateRegion(region)
 {
     var a = MKMapPointForCoordinate(CLLocationCoordinate2DMake(
@@ -293,6 +299,25 @@ function MKMapRectForCoordinateRegion(region)
         region.center.longitude + region.span.longitudeDelta / 2));
 
     return MKMapRectMake(MIN(a.x, b.x), MIN(a.y, b.y), ABS(a.x - b.x), ABS(a.y - b.y));
+}
+
+function MKMapRectIntersection(lhsRect, rhsRect)
+{
+    var intersection = MKMapRectMake(MAX(MKMapRectGetMinX(lhsRect), MKMapRectGetMinX(rhsRect)),
+                                  MAX(MKMapRectGetMinY(lhsRect), MKMapRectGetMinY(rhsRect)),
+                                  0, 0);
+
+    intersection.size.width = MIN(MKMapRectGetMaxX(lhsRect), MKMapRectGetMaxX(rhsRect)) - MKMapRectGetMinX(intersection);
+    intersection.size.height = MIN(MKMapRectGetMaxY(lhsRect), MKMapRectGetMaxY(rhsRect)) - MKMapRectGetMinY(intersection);
+
+    return MKMapRectIsEmpty(intersection) ? MKMapRectZero() : intersection;
+}
+
+function MKMapRectIntersectsRect(lhsRect, rhsRect)
+{
+    var intersection = MKMapRectIntersection(lhsRect, rhsRect);
+
+    return !MKMapRectIsEmpty(intersection);
 }
 
 function MKCoordinateRegionForMapRect(mapRect)
