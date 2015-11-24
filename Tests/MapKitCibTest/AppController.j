@@ -340,7 +340,7 @@ CPLogRegister(CPLogConsole);
 
 - (void)mapView:(MKMapView)aMapView didFailToLocateUserWithError:(CPError)anError
 {
-    CPLog.debug(_cmd + anError);
+    CPLog.debug(_cmd + [anError description]);
 }
 
 - (void)mapView:(MKMapView)aMapView regionDidChangeAnimated:(BOOL)animated

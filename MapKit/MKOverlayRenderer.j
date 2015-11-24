@@ -1,6 +1,7 @@
 @import "MKGeometry.j"
 @import <Foundation/CPObject.j>
 
+@global OverlayContainer;
 var ReusableOverlayViews = [];
 
 @implementation MKOverlayRenderer : CPObject
@@ -81,6 +82,11 @@ var ReusableOverlayViews = [];
 
         this.drawInMap(zoomScale, canvas.getContext("2d"));
     };
+
+    OverlayContainer.prototype.context = function()
+    {
+        return this._canvas.getContext("2d");
+    };
 }
 
 - (id)initWithOverlay:(id)anOverlay
@@ -114,7 +120,7 @@ var ReusableOverlayViews = [];
 
     _overlayView = new OverlayContainer(aMapView, boundingMapRect, drawHandler);
 }
-
+/*
 + (void)enqueueOverlayView:(id)anOverlayView
 {
     ReusableOverlayViews.push(anOverlayView);
@@ -127,7 +133,7 @@ var ReusableOverlayViews = [];
 
     return ReusableOverlayViews.pop();
 }
-
+*/
 - (void)layoutIfNeeded
 {
     if (_needsLayout)
@@ -139,12 +145,13 @@ var ReusableOverlayViews = [];
 
 - (void)layout
 {
-    _overlayView.layout();
+    if (_overlayView)
+        _overlayView.layout();
 }
 
 - (void)displayIfNeededInMapRect:(MKMapRect)mapRect zoomScale:(float)zoomScale
 {
-    if (_needsDisplay && [self canDrawMapRect:mapRect zoomScale:zoomScale])
+    if (_overlayView && _needsDisplay && [self canDrawMapRect:mapRect zoomScale:zoomScale])
     {
         [self _drawMapRect:mapRect zoomScale:zoomScale];
         _needsDisplay = NO;
@@ -153,8 +160,7 @@ var ReusableOverlayViews = [];
 
 - (void)_drawMapRect:(MKMapRect)mapRect zoomScale:(float)zoomScale
 {
-    var context = _overlayView.context();
-    [self drawMapRect:mapRect zoomScale:zoomScale inContext:context];
+    [self drawMapRect:mapRect zoomScale:zoomScale inContext:_overlayView.context()];
 }
 
 - (void)drawMapRect:(MKMapRect)mapRect zoomScale:(float)zoomScale inContext:(id)context
@@ -206,7 +212,8 @@ var _PointForMapPoint = function(aMapPoint, aBoundingMapRect, aScale)
     return CGPointMake((aMapPoint.x - originPoint.x) * aScale, (aMapPoint.y - originPoint.y) * aScale);
 };
 
-var OverlayContainer = function (aMapView, boundingMapRect, drawInMapHandler)
+
+var OverlayContainer = function(aMapView, boundingMapRect, drawInMapHandler)
 {
     // We define a property to hold the image's
     // div. We'll actually create this div
@@ -221,7 +228,7 @@ var OverlayContainer = function (aMapView, boundingMapRect, drawInMapHandler)
     this.setMap(aMapView._map);
 
     return this;
-}
+};
 
 // DEBUG
 /*
