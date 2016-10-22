@@ -4,6 +4,8 @@
 @import <Foundation/CPInvocationOperation.j>
 @import <Foundation/CPInvocation.j>
 
+@class ScriptOperation;
+
 var CALLBACK_PARAMETERS = [],
     _CachedScriptLoader = {};
 

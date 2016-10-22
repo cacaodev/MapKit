@@ -1,11 +1,6 @@
-@class CPArray;
+@import <Foundation/CPArray.j>
 
 @implementation CPArray (Additions)
-
-- (CPArray)arrayByApplyingBlock:(Function)aFunction
-{
-    return self.map(aFunction);
-}
 
 - (CPArray)objectsPassingTest:(Function)aFunction
 {

@@ -36,7 +36,7 @@
 @class MKOverlay;
 @class MKUserLocation;
 @class MKPinAnnotationView;
-
+@class MKMapType;
 @global google;
 
 var _GoogleAPIScriptLoader = nil,
@@ -94,7 +94,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
     unsigned int            _MKMapViewDelegateMethods;
 
-    MapOptions              _options @accessors(property=options);
+    Object                  _options @accessors(property=options);
 
     MKUserLocation          _userLocation @accessors(readonly, getter=userLocation);
     Object                  _annotationsQuadTree;
@@ -468,7 +468,7 @@ CPLog.debug(_cmd);
     [_options setValue:shouldShow forKey:@"zoomControl"];
 }
 
-- (void)setOptions:(MapOptions)opts
+- (void)setOptions:(Object)opts
 {
     [_options _setOptionsFromDictionary:opts];
 }

@@ -1,4 +1,6 @@
 /* Abstract class */
+@import <Foundation/CPObject.j>
+@import <Foundation/CPString.j>
 
 @implementation MKShape : CPObject
 {

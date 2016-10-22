@@ -3,9 +3,10 @@
 @import "MKTypes.j"
 
 @class MKMapItem;
-
+@class CPDate;
 @global google;
 @global MKDirectionsTransportType;
+@typedef MKDirectionsTransportType;
 
 var GOOGLE_TRAVEL_MODES = nil;
 

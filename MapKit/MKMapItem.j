@@ -1,4 +1,6 @@
 
+@class MKPlacemark;
+
 var mapItemForCurrentLocation = nil;
 
 @implementation MKMapItem : CPObject

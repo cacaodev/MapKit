@@ -1,5 +1,6 @@
 @import <Foundation/CPObject.j>
 @import "MKGeometry.j"
+@import "MKMapView.j"
 
 var JSON_NAME_MAPPING =
 {

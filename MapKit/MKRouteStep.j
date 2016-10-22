@@ -4,6 +4,8 @@
 @import "MKTypes.j"
 @import "MKPolyline.j"
 
+@typedef CLLocationDistance;
+
 @implementation MKRouteStep : CPObject
 {
     CLLocationDistance          _distance       @accessors(readonly, getter=distance);

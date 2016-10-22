@@ -15,8 +15,8 @@
 	CPView      _leftCalloutAccessoryView  @accessors;
 	CPView      _rightCalloutAccessoryView @accessors;
 	CPString    _reuseIdentifier           @accessors(readonly, getter=reuseIdentifier);
-	CPPoint     _calloutOffset             @accessors(property=calloutOffset);
-	CPPoint     _centerOffset              @accessors(property=centerOffset);
+	CGPoint     _calloutOffset             @accessors(property=calloutOffset);
+	CGPoint     _centerOffset              @accessors(property=centerOffset);
 
 	id          _annotation                @accessors(readonly, getter=annotation);
 	Object      _marker;
