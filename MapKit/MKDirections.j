@@ -2,7 +2,7 @@
 @import "MKDirectionsResponse.j"
 @import "MKRoute.j"
 
-@global google;
+@global google
 
 @implementation MKDirections : CPObject
 {

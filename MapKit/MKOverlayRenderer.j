@@ -1,7 +1,9 @@
-@import "MKGeometry.j"
 @import <Foundation/CPObject.j>
 
-@global OverlayContainer;
+@import "MKGeometry.j"
+
+@global OverlayContainer
+
 var ReusableOverlayViews = [];
 
 @implementation MKOverlayRenderer : CPObject

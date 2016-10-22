@@ -1,12 +1,15 @@
 @import <Foundation/CPObject.j>
+
 @import "MKGeometry.j"
 @import "MKTypes.j"
 
-@class MKMapItem;
-@class CPDate;
-@global google;
-@global MKDirectionsTransportType;
-@typedef MKDirectionsTransportType;
+@class MKMapItem
+@class CPDate
+
+@global google
+@global MKDirectionsTransportType
+
+@typedef MKDirectionsTransportType
 
 var GOOGLE_TRAVEL_MODES = nil;
 

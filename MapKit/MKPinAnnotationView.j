@@ -3,8 +3,9 @@
 
 @import "MKAnnotationView.j"
 
-@global google
 @class MKPinAnnotationColor
+
+@global google
 
 var MKPinAnnotationColorRed  = 0,
     MKPinAnnotationColorGreen = 1,

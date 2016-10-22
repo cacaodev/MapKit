@@ -4,10 +4,10 @@
 @import <Foundation/CPInvocationOperation.j>
 @import <Foundation/CPInvocation.j>
 
-@class ScriptOperation;
+@class ScriptOperation
 
 var CALLBACK_PARAMETERS = [],
-    _CachedScriptLoader = {};
+    CACHED_SCRIPT_LOADER = {};
 
 @implementation ScriptLoader : CPObject
 {
@@ -43,11 +43,11 @@ var CALLBACK_PARAMETERS = [],
 
 + (ScriptLoader)scriptWithURL:(CPString)aURL callbackParameter:(CPString)callback
 {
-    var script = _CachedScriptLoader[aURL];
+    var script = CACHED_SCRIPT_LOADER[aURL];
     if (!script)
     {
         script = [[ScriptLoader alloc] initWithURL:aURL callbackParameter:callback];
-        _CachedScriptLoader[aURL] = script;
+        CACHED_SCRIPT_LOADER[aURL] = script;
     }
 
     return script;

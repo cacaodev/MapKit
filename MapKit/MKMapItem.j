@@ -1,5 +1,5 @@
 
-@class MKPlacemark;
+@class MKPlacemark
 
 var mapItemForCurrentLocation = nil;
 

@@ -1,7 +1,7 @@
 @import "MKPlacemark.j"
 @import "MKMapView.j"
 
-@global google;
+@global google
 
 @implementation MKGeocoder : CPObject
 {

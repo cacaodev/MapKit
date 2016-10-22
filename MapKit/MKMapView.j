@@ -33,11 +33,12 @@
 @import "ScriptLoader.j"
 @import "QuadTree.js"
 
-@class MKOverlay;
-@class MKUserLocation;
-@class MKPinAnnotationView;
-@class MKMapType;
-@global google;
+@class MKOverlay
+@class MKUserLocation
+@class MKPinAnnotationView
+@class MKMapType
+
+@global google
 
 var _GoogleAPIScriptLoader = nil,
     GOOGLE_API_URL = "http://maps.google.com/maps/api/js?sensor=false&callback=_GoogleMapsLoaded",

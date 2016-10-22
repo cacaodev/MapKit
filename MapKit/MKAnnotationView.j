@@ -1,7 +1,8 @@
 @import <AppKit/CPView.j>
+
 @import "MKGeometry.j"
 
-@global google;
+@global google
 
 @implementation MKAnnotationView : CPView
 {
