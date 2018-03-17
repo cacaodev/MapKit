@@ -101,7 +101,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     Object                  _annotationsQuadTree;
 //  Object                  _overlaysQuadTree;
     Object                  _ViewForAnnotation;
-    Object                  _RendererForOverlay;
+    Map                     _RendererForOverlay;
 }
 
 + (void)initialize
@@ -173,7 +173,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 //    _overlaysQuadTree = nil;
     _MKMapViewDelegateMethods = 0;
     _ViewForAnnotation = {};
-    _RendererForOverlay = {};
+    _RendererForOverlay = new Map();
     _showsUserLocation = NO;
     _userLocation = nil;
 }
@@ -768,8 +768,12 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
     [overlays enumerateObjectsUsingBlock:function(ov, idx, stop)
     {
-        var renderer = [self _rendererForOverlay:ov];
-        [renderer _remove];
+        var renderer = _RendererForOverlay.get(ov);
+
+        if (renderer) {
+            [renderer _remove];
+            _RendererForOverlay.delete(ov);
+        }
     }];
 
     [_overlays removeObjectsInArray:overlays];
@@ -783,13 +787,12 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 - (id)_rendererForOverlay:(id)anOverlay
 {
-    var uuid = [anOverlay UID],
-        renderer = _RendererForOverlay[uuid];
+    var renderer = _RendererForOverlay.get(anOverlay);
 
     if (!renderer && (_MKMapViewDelegateMethods & delegate_mapView_rendererForOverlay))
     {
         renderer = [delegate mapView:self rendererForOverlay:anOverlay];
-        _RendererForOverlay[uuid] = renderer;
+        _RendererForOverlay.set(anOverlay, renderer);
     }
 
     return renderer;
