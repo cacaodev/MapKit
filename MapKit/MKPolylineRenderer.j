@@ -21,7 +21,7 @@
 
 - (void)drawMapRect:(MKMapRect)mapRect zoomScale:(float)zoomScale inContext:(id)context
 {
-    CPLog.debug(_cmd + mapRect + zoomScale + context);
+    //CPLog.debug(_cmd + mapRect + zoomScale + context);
     var path = [self path];
 
     if (!CGPathIsEmpty(path))

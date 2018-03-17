@@ -75,7 +75,7 @@
 - (void)invalidatePath
 {
     _path = nil;
-    CPLog.debug(_cmd);
+    //CPLog.debug(_cmd);
 }
 
 - (void)applyStrokePropertiesToContext:(CGContext)context atZoomScale:(float)zoomScale

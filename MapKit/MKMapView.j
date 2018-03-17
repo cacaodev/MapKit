@@ -197,7 +197,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
 - (void)_buildMap
 {
-CPLog.debug(_cmd);
+//CPLog.debug(_cmd);
 
     google.maps.visualRefresh = true;
 
@@ -873,7 +873,7 @@ CPLog.debug(_cmd);
         [newVisibleOverlays addObject:overlay];
     }];
 
-    console.log("REMOVE: " + toRemove + " ADD: " + toAdd + " Unchanged: " + unchanged);
+    //CPLog.debug("REMOVE: " + toRemove + " ADD: " + toAdd + " Unchanged: " + unchanged);
 
     if ([toAdd count])
     {

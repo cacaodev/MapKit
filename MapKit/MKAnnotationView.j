@@ -32,7 +32,7 @@
 
     GMOverlay.prototype.onAdd = function()
     {
-        console.log("onAdd" + this.toString());
+        //CPLog.debug("onAdd" + this.toString());
         // We add an overlay to a map via one of the map's panes.
         // We'll add this overlay to the overlayImage pane.
         var panes = this.getPanes();
@@ -46,7 +46,7 @@
 
     GMOverlay.prototype.draw = function()
     {
-        console.log("draw" + this.toString());
+        //CPLog.debug("draw" + this.toString());
         // Size and position the overlay. We use a southwest and northeast
         // position of the overlay to peg it to the correct position and size.
         // We need to retrieve the projection from this overlay to do this.
@@ -138,7 +138,7 @@
             {
                 var latLng = mouseEvent.latLng;
                 [_annotation setCoordinate:CLLocationCoordinate2DFromLatLng(latLng)];
-                console.log("drag end" + [_annotation coordinate]);
+                //CPLog.debug("drag end" + [_annotation coordinate]);
             });
         }
 

@@ -36,7 +36,7 @@
 
         [_polyline _addPoint:point];
 
-        console.log(i + ": " + point + " " + latLng);
+        //CPLog.debug(i + ": " + point + " " + latLng);
     }
 
     return self;
