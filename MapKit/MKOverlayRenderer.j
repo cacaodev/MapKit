@@ -47,6 +47,11 @@ var ReusableOverlayViews = [];
 
     OverlayContainer.prototype.onRemove = function()
     {
+        if (this._div == null) {
+            console.warn("OverlayContainer: _div is null. Did not remove itself.");
+            return;
+        }
+        
         this._div.parentNode.removeChild(this._div);
         this.bounds = null;
         this.drawInMap = null;
