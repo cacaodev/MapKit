@@ -7,3 +7,5 @@ There is a test for a cib-based MapView also testing the geocoding feature.
 
 USAGE: 1/ build the framework 'cd MapKit && jake'
        2/ In Tests/MapKitCibTest/Frameworks/, symlink the built framework (should be in $CAPP_BUILD/Release/MapKit) along with AppKit and Foundation.
+
+!https://badges.gitter.im/MapKit-cappuccino/Lobby.svg(Join the chat at https://gitter.im/MapKit-cappuccino/Lobby)!:https://gitter.im/MapKit-cappuccino/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
