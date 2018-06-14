@@ -40,6 +40,8 @@
 
 @global google
 
+#define GOOGLE_API_KEY "YOUR_GOOGLE_API_KEY_HERE"
+
 var _GoogleAPIScriptLoader = nil,
     GOOGLE_API_URL = "http://maps.google.com/maps/api/js?callback=_GoogleMapsLoaded&key=" + GOOGLE_API_KEY,
     GOOGLE_API_CALLBACK = "_GoogleMapsLoaded",
