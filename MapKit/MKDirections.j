@@ -3,11 +3,21 @@
 @import "MKRoute.j"
 
 @global google
+var _DirectionsService = NULL;
 
 @implementation MKDirections : CPObject
 {
     BOOL _calculating @accessors(readonly, getter=isCalculating);
     MKDirectionsRequest _request;
+}
+
++ (id)directionsService
+{
+    if (_DirectionsService == NULL) {
+        _DirectionsService = new google.maps.DirectionsService();
+    }
+
+    return _DirectionsService;
 }
 
 - (id)initWithRequest:(MKDirectionsRequest)aRequest
@@ -28,11 +38,11 @@
 {
     if (_calculating)
     {
-        completionHandler(nil, nil);
+        completionHandler(nil, @"MKDirection is already calculating the route.");
         return;
     }
 
-    var service = new google.maps.DirectionsService(),
+    var service = [[self class] directionsService],
         g_request = [_request toJSON];
 
     service.route(g_request, function(results, status)
