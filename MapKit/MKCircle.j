@@ -1,4 +1,5 @@
 @import "MKShape.j"
+@import "MKGeometry.j"
 
 @implementation MKCircle : MKShape
 {
