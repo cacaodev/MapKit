@@ -41,9 +41,10 @@
 @global google
 
 #define GOOGLE_API_KEY "YOUR_GOOGLE_API_KEY_HERE"
+#define GOOGLE_API_KEY "AIzaSyBF0lFrXyYHURFmjADSTZWJyM_T2wGz1v8"
 
 var _GoogleAPIScriptLoader = nil,
-    GOOGLE_API_URL = "http://maps.google.com/maps/api/js?callback=_GoogleMapsLoaded&key=" + GOOGLE_API_KEY,
+    GOOGLE_API_URL = "https://maps.google.com/maps/api/js?callback=_GoogleMapsLoaded&key=" + GOOGLE_API_KEY,
     GOOGLE_API_CALLBACK = "_GoogleMapsLoaded",
     MAP_TYPES = ["roadmap", "hybrid", "satellite", "terrain"];
 
@@ -657,57 +658,41 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
     else if (count == 1)
         [self setCenterCoordinate:[[annotations objectAtIndex:0] coordinate]];
     else
-        [self setVisibleMapRect:[self _mapRectForAnnotations:annotations]];
+        [self setVisibleMapRect:[self _mapRectForItems:annotations]];
 }
 
-- (MKMapRect)_mapRectForAnnotations:(CPArray)annotations
+- (MKMapRect)_mapRectForItems:(CPArray)items
 {
-    var count = [annotations count],
-        result;
-
-    if (count == 0)
+    if ([items count] == 0)
         return MKMapRectZero();
 
-    var coordinate = [[annotations objectAtIndex:0] coordinate],
-        mapPoint = MKMapPointForCoordinate(coordinate);
+    var minX = MKWORLD_SIZE, minY = MKWORLD_SIZE, maxX = 0, maxY = 0;
 
-    if (count == 1)
-    {
-        var region = MKCoordinateRegionCopy(_region);
-        region.center = coordinate;
-
-        result = MKMapRectForCoordinateRegion(region); // Something wrong here. The scale changes, it should not.
-    }
-    else
-    {
-        var minX = mapPoint.x,
-            maxX = minX,
-            minY = mapPoint.y,
-            maxY = minY;
-
-        for (var i = 1; i < count; i++)
+    [items enumerateObjectsUsingBlock:function(item, idx){
+        var boundingMapRect;
+        
+        if ([item respondsToSelector:@selector(boundingMapRect)])
         {
-            var annotation = annotations[i],
-                coord = [annotation coordinate],
-                point = MKMapPointForCoordinate(coord),
-                x = point.x,
-                y = point.y;
-
-                if (x < minX)
-                    minX = x;
-                else if (x > maxX)
-                    maxX = x;
-
-                if (y < minY)
-                    minY = y;
-                else if (y > maxY)
-                    maxY = y;
+            boundingMapRect = [item boundingMapRect];
+        }
+        else if ([item respondsToSelector:@selector(coordinate)])
+        {
+            var point = MKMapPointForCoordinate([item coordinate]);
+            boundingMapRect = MKMapRectMake(point.x, point.y, 0, 0);
+        }
+        else
+        {
+            CPLog.debug("Invalid annotation or overlay " + item);
+            return;
         }
 
-        result = MKMapRectMake(minX, minY, maxX - minX, maxY - minY);
-    }
+        minX = MIN(minX, MKMapRectGetMinX(boundingMapRect));
+        maxX = MAX(maxX, MKMapRectGetMaxX(boundingMapRect));
+        minY = MIN(minY, MKMapRectGetMinY(boundingMapRect));
+        maxY = MAX(maxY, MKMapRectGetMaxY(boundingMapRect));
+    }];
 
-    return result;
+    return MKMapRectMake(minX, minY, maxX - minX, maxY - minY);
 }
 
 /*
@@ -715,6 +700,9 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 */
 - (CGRect)annotationVisibleRect
 {
+    var mapRect = [self _mapRectForAnnotations:_annotations];
+
+    return [self convertMapRect:mapRect toRectToView:self];
 }
 
 /*
