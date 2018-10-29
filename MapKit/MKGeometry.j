@@ -221,6 +221,14 @@ function MKMapRect(/*MKMapPoint*/ origin, /*MKMapSize*/ size)
     return this;
 }
 
+function MKMapRectInset(mapRect, xOffset, yOffset)
+{
+	this.origin = MKMapPointMake(mapRect.origin.x - xOffset, mapRect.origin.y - yOffset);
+    this.size = MKMapSizeMake(mapRect.size.width + 2 * xOffset, mapRect.size.height + 2 * yOffset);
+
+    return this;
+}
+
 function MKMapRectMake(/*double*/ x, /*double*/ y, /*double*/ width ,/*double*/ height)
 {
 	return new MKMapRect(MKMapPointMake(x, y), MKMapSizeMake(width, height));
