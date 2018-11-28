@@ -670,7 +670,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
     [items enumerateObjectsUsingBlock:function(item, idx){
         var boundingMapRect;
-        
+
         if ([item respondsToSelector:@selector(boundingMapRect)])
         {
             boundingMapRect = [item boundingMapRect];
@@ -762,7 +762,7 @@ var delegate_mapView_didAddAnnotationViews      = 1 << 1,
 
         if (renderer) {
             [renderer _remove];
-            _RendererForOverlay.delete(ov);
+            _RendererForOverlay["delete"](ov);
         }
     }];
 
